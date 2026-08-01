@@ -5,9 +5,28 @@ pub struct EntityID(pub u64);
 
 pub type EntityType = [u8; 4];
 
-pub type EntityName = String;
+pub type EntityName = Box<str>;
 
-pub type Date = chrono::DateTime<chrono::Utc>;
+#[derive(Archive, Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Date(pub i64);
+
+impl Date {
+    pub fn now() -> Self {
+        Self(chrono::Utc::now().timestamp_millis())
+    }
+
+    pub fn from_timestamp(timestamp: i64) -> Self {
+        Self(timestamp)
+    }
+
+    pub fn timestamp(&self) -> i64 {
+        self.0
+    }
+
+    pub fn to_chrono(&self) -> chrono::DateTime<chrono::Utc> {
+        chrono::DateTime::from_timestamp(self.0, 0).expect("invalid timestamp")
+    }
+}
 
 pub type Alias = Box<str>;
 
@@ -44,11 +63,14 @@ impl From<std::io::Error> for EntityError {
 
 #[derive(Archive, Serialize, Deserialize)]
 pub enum RelationshipType {
-    Parent,
-    Child,
-    Manufacturer,
-    CreatedBy,
+    IsA,
+    InstanceOf,
+    PartOf,
+    MadeBy,
+    OwnedBy,
+    LocatedIn,
     SimilarTo,
+    ReplacedBy,
 }
 
 #[derive(Archive, Serialize, Deserialize)]
