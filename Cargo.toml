@@ -4,8 +4,12 @@ resolver = "2"
 members = [
     "crates/eir-core",
     "apps/playground",
+    "apps/admin-ui",
 ]
 
 default-members = [
     "apps/playground",
 ]
+
+[workspace.dependencies]
+chrono = "0.4.45"
