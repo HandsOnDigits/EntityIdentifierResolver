@@ -1,0 +1,6 @@
+[package]
+name = "entity_identifier_resolver"
+version = "0.0.0"
+edition = "2024"
+
+[dependencies]
