@@ -5,3 +5,7 @@ members = [
     "crates/eir-core",
     "apps/playground",
 ]
+
+default-members = [
+    "apps/playground",
+]
