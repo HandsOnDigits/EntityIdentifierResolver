@@ -3,6 +3,7 @@ resolver = "2"
 
 members = [
     "crates/eir-core",
+    "tools/eir-generator",
     "apps/playground",
     "apps/admin-ui",
 ]
