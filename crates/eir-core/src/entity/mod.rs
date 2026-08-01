@@ -6,6 +6,18 @@ use types::*;
 use rkyv::{Archive, Deserialize, Serialize};
 
 #[derive(Archive, Serialize, Deserialize)]
+pub struct EntitySource {
+    pub external_id: String,
+
+    pub provider: EntityName,
+
+    pub verified: bool,
+
+    pub created: Date,
+    pub updated: Date,
+}
+
+#[derive(Archive, Serialize, Deserialize)]
 pub struct Entity {
     pub id: EntityID,
 
@@ -16,4 +28,5 @@ pub struct Entity {
     pub properties: Vec<Property>,
 
     pub relationships: Vec<Relationship>,
+    pub sources: Vec<EntitySource>,
 }
