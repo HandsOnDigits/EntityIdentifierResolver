@@ -15,6 +15,5 @@ pub struct Product {
 
 pub fn load_products(path: &str) -> Result<Vec<Product>> {
     let data = fs::read_to_string(path)?;
-
     Ok(serde_json::from_str(&data)?)
 }
