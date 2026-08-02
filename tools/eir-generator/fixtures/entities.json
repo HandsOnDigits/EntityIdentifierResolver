@@ -5,12 +5,43 @@
     "name": "Aurora Foods",
     "aliases": ["Aurora"],
     "tags": ["food", "manufacturer"],
-    "properties": [
-      {
-        "key": "industry",
-        "value": "food production"
-      }
-    ],
+    "properties": [],
+    "relationships": []
+  },
+  {
+    "id": 1001,
+    "entity_type": "company",
+    "name": "Golden Harvest Group",
+    "aliases": ["Golden Harvest"],
+    "tags": ["food", "manufacturer"],
+    "properties": [],
+    "relationships": []
+  },
+  {
+    "id": 1002,
+    "entity_type": "company",
+    "name": "PureSpring Ltd",
+    "aliases": ["PureSpring"],
+    "tags": ["water", "manufacturer"],
+    "properties": [],
+    "relationships": []
+  },
+  {
+    "id": 1003,
+    "entity_type": "company",
+    "name": "Moon Foods",
+    "aliases": ["Moon"],
+    "tags": ["plant", "manufacturer"],
+    "properties": [],
+    "relationships": []
+  },
+  {
+    "id": 1004,
+    "entity_type": "company",
+    "name": "FrostPeak Industries",
+    "aliases": ["FrostPeak"],
+    "tags": ["frozen", "manufacturer"],
+    "properties": [],
     "relationships": []
   },
 
@@ -23,13 +54,85 @@
     "properties": [],
     "relationships": []
   },
+  {
+    "id": 2001,
+    "entity_type": "category",
+    "name": "Snack",
+    "aliases": ["Snack Food"],
+    "tags": ["food", "small-meal"],
+    "properties": [],
+    "relationships": []
+  },
+  {
+    "id": 2002,
+    "entity_type": "category",
+    "name": "Bakery",
+    "aliases": ["Bread"],
+    "tags": ["food", "bakery"],
+    "properties": [],
+    "relationships": []
+  },
+  {
+    "id": 2003,
+    "entity_type": "category",
+    "name": "Frozen Food",
+    "aliases": ["Frozen"],
+    "tags": ["food", "cold-storage"],
+    "properties": [],
+    "relationships": []
+  },
+  {
+    "id": 2004,
+    "entity_type": "category",
+    "name": "Plant Based",
+    "aliases": ["Vegan"],
+    "tags": ["food", "plant"],
+    "properties": [],
+    "relationships": []
+  },
 
   {
     "id": 3000,
     "entity_type": "country",
     "name": "Denmark",
     "aliases": ["DK"],
-    "tags": ["country", "location"],
+    "tags": ["country", "europe"],
+    "properties": [],
+    "relationships": []
+  },
+  {
+    "id": 3001,
+    "entity_type": "country",
+    "name": "Sweden",
+    "aliases": ["SE"],
+    "tags": ["country", "europe"],
+    "properties": [],
+    "relationships": []
+  },
+  {
+    "id": 3002,
+    "entity_type": "country",
+    "name": "Norway",
+    "aliases": ["NO"],
+    "tags": ["country", "europe"],
+    "properties": [],
+    "relationships": []
+  },
+  {
+    "id": 3003,
+    "entity_type": "country",
+    "name": "Finland",
+    "aliases": ["FI"],
+    "tags": ["country", "europe"],
+    "properties": [],
+    "relationships": []
+  },
+  {
+    "id": 3004,
+    "entity_type": "country",
+    "name": "Germany",
+    "aliases": ["DE"],
+    "tags": ["country", "europe"],
     "properties": [],
     "relationships": []
   },
@@ -57,6 +160,94 @@
       },
       {
         "target": 3000,
+        "kind": "located_in"
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "entity_type": "food",
+    "name": "Golden Grain Crunch",
+    "aliases": ["Grain Crunch", "Golden Cereal"],
+    "tags": ["crunchy", "grain", "snack"],
+    "properties": [],
+    "relationships": [
+      {
+        "target": 1001,
+        "kind": "made_by"
+      },
+      {
+        "target": 2001,
+        "kind": "is_a"
+      },
+      {
+        "target": 3001,
+        "kind": "located_in"
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "entity_type": "food",
+    "name": "Crystal Spring Water",
+    "aliases": ["Crystal Water", "Spring Water"],
+    "tags": ["water", "still", "drink"],
+    "properties": [],
+    "relationships": [
+      {
+        "target": 1002,
+        "kind": "made_by"
+      },
+      {
+        "target": 2000,
+        "kind": "is_a"
+      },
+      {
+        "target": 3002,
+        "kind": "located_in"
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "entity_type": "food",
+    "name": "Moonlight Oat Blend",
+    "aliases": ["Oat Blend"],
+    "tags": ["oat", "plant", "drink"],
+    "properties": [],
+    "relationships": [
+      {
+        "target": 1003,
+        "kind": "made_by"
+      },
+      {
+        "target": 2004,
+        "kind": "is_a"
+      },
+      {
+        "target": 3003,
+        "kind": "located_in"
+      }
+    ]
+  },
+  {
+    "id": 5,
+    "entity_type": "food",
+    "name": "FrostPeak Pizza Bites",
+    "aliases": ["Pizza Bites"],
+    "tags": ["pizza", "frozen", "snack"],
+    "properties": [],
+    "relationships": [
+      {
+        "target": 1004,
+        "kind": "made_by"
+      },
+      {
+        "target": 2003,
+        "kind": "is_a"
+      },
+      {
+        "target": 3004,
         "kind": "located_in"
       }
     ]
