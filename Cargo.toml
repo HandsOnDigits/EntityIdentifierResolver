@@ -4,6 +4,7 @@ resolver = "2"
 members = [
     "crates/eir-core",
     "tools/eir-generator",
+    "tools/eir-debug",
     "apps/playground",
     "apps/admin-ui",
 ]
@@ -14,7 +15,7 @@ default-members = [
 
 [workspace.dependencies]
 chrono = "0.4.45"
-rkyv = "0.8.17"
+rkyv = { version = "0.8.17", features = ["bytecheck"] }
 anyhow = "1.0.104"
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"

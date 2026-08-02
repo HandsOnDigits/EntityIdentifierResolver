@@ -117,6 +117,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "eir-debug"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "eir-core",
+ "rkyv",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "eir-generator"
 version = "0.0.0"
 dependencies = [

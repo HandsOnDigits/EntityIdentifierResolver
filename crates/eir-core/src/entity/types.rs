@@ -1,13 +1,13 @@
 use rkyv::{Archive, Deserialize, Serialize};
 
-#[derive(Archive, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Archive, Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EntityID(pub u64);
 
 pub type EntityType = [u8; 4];
 
 pub type EntityName = Box<str>;
 
-#[derive(Archive, Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Archive, Clone, Copy, PartialEq, Eq, Hash, Debug, Serialize, Deserialize)]
 pub struct Date(pub i64);
 
 impl Date {
@@ -39,7 +39,7 @@ pub struct TagEntry {
 
 pub type PropertyID = u32;
 
-#[derive(Archive, Serialize, Deserialize)]
+#[derive(Archive, Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum Value {
     String(String),
     Integer(i64),
@@ -48,7 +48,7 @@ pub enum Value {
     Entity(EntityID),
 }
 
-#[derive(Archive, Serialize, Deserialize)]
+#[derive(Archive, Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Property {
     pub key: PropertyID,
     pub value: Value,
@@ -66,7 +66,7 @@ impl From<std::io::Error> for EntityError {
     }
 }
 
-#[derive(Archive, Serialize, Deserialize)]
+#[derive(Archive, Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RelationshipType {
     IsA,
     InstanceOf,
@@ -78,7 +78,7 @@ pub enum RelationshipType {
     ReplacedBy,
 }
 
-#[derive(Archive, Serialize, Deserialize)]
+#[derive(Archive, Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Relationship {
     pub target: EntityID,
     pub kind: RelationshipType,

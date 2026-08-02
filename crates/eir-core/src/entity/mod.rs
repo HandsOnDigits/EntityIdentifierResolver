@@ -5,7 +5,7 @@ use types::*;
 
 use rkyv::{Archive, Deserialize, Serialize};
 
-#[derive(Archive, Serialize, Deserialize)]
+#[derive(Archive, Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct EntitySource {
     pub external_id: String,
 
@@ -17,7 +17,7 @@ pub struct EntitySource {
     pub updated: Date,
 }
 
-#[derive(Archive, Serialize, Deserialize)]
+#[derive(Archive, Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Entity {
     pub id: EntityID,
 
