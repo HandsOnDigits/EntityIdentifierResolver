@@ -1,4 +1,3 @@
-pub mod traits;
 pub mod types;
 
 use types::*;
@@ -31,4 +30,16 @@ pub struct Entity {
 
     pub relationships: Vec<Relationship>,
     pub sources: Vec<EntitySource>,
+}
+
+#[derive(Debug, Clone)]
+pub struct EntityDocument {
+    pub id: EntityID,
+
+    pub aliases: Vec<String>,
+    pub tags: Vec<String>,
+    pub properties: Vec<String>,
+
+    pub sources: Vec<EntitySource>,
+    pub relationships: Vec<Relationship>,
 }

@@ -6,7 +6,7 @@ members = [
     "tools/eir-generator",
     "tools/eir-debug",
     "apps/playground",
-    "apps/admin-ui",
+    "apps/admin",
 ]
 
 default-members = [
