@@ -1,9 +1,10 @@
+mod database;
 mod read;
 
 use anyhow::Result;
 
 fn main() -> Result<()> {
-    read::read_entities("output/entities.bin")?;
+    read::read_database()?;
 
     Ok(())
 }

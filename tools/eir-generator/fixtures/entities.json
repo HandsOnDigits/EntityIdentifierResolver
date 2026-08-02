@@ -1,0 +1,64 @@
+[
+  {
+    "id": 1000,
+    "entity_type": "company",
+    "name": "Aurora Foods",
+    "aliases": ["Aurora"],
+    "tags": ["food", "manufacturer"],
+    "properties": [
+      {
+        "key": "industry",
+        "value": "food production"
+      }
+    ],
+    "relationships": []
+  },
+
+  {
+    "id": 2000,
+    "entity_type": "category",
+    "name": "Drink",
+    "aliases": ["Beverage"],
+    "tags": ["food", "liquid"],
+    "properties": [],
+    "relationships": []
+  },
+
+  {
+    "id": 3000,
+    "entity_type": "country",
+    "name": "Denmark",
+    "aliases": ["DK"],
+    "tags": ["country", "location"],
+    "properties": [],
+    "relationships": []
+  },
+
+  {
+    "id": 1,
+    "entity_type": "food",
+    "name": "FizzBerry Spark",
+    "aliases": ["Berry Spark", "FizzBerry"],
+    "tags": ["sparkling", "berry", "drink", "sweet"],
+    "properties": [
+      {
+        "key": "volume",
+        "value": "330ml"
+      }
+    ],
+    "relationships": [
+      {
+        "target": 1000,
+        "kind": "made_by"
+      },
+      {
+        "target": 2000,
+        "kind": "is_a"
+      },
+      {
+        "target": 3000,
+        "kind": "located_in"
+      }
+    ]
+  }
+]

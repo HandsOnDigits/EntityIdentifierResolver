@@ -32,11 +32,6 @@ pub type Alias = Box<str>;
 
 pub type Tag = u32;
 
-pub struct TagEntry {
-    pub id: Tag,
-    pub name: Box<str>,
-}
-
 pub type PropertyID = u32;
 
 #[derive(Archive, Serialize, Deserialize, Debug, Clone, PartialEq)]

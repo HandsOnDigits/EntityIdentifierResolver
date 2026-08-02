@@ -1,60 +1,74 @@
 use anyhow::Result;
 
-use crate::{loader::*, registry::*};
+use crate::{database::GeneratedDatabase, loader::*, mapper::*, registry::*};
 
 use eir_core::entity::types::*;
-
 use eir_core::entity::*;
 
-pub fn generate_entities() -> Result<Vec<Entity>> {
-    let products = load_products(concat!(
+pub fn generate_database() -> Result<GeneratedDatabase> {
+    let fixtures = load_entities(concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/fixtures/products.json"
+        "/fixtures/entities.json"
     ))?;
 
     let mut registry = Registry::new();
 
-    let entities = products
+    let mut relationships = Vec::new();
+
+    let entities: Vec<Entity> = fixtures
         .into_iter()
-        .map(|p| {
-            let tags = p.tags.iter().map(|t| registry.tag(t)).collect();
+        .map(|fixture| {
+            let tags: Vec<Tag> = fixture.tags.iter().map(|t| registry.tag(t)).collect();
+
+            let entity_relationships = fixture
+                .relationships
+                .into_iter()
+                .map(|r| Relationship {
+                    target: EntityID(r.target),
+                    kind: map_relationship(&r.kind),
+                })
+                .collect::<Vec<_>>();
+
+            relationships.extend(entity_relationships.clone());
 
             Entity {
-                id: EntityID(p.id),
+                id: EntityID(fixture.id),
 
-                names: vec![p.name.into_boxed_str()],
+                entity_type: map_entity_type(&fixture.entity_type),
 
-                aliases: p.aliases.into_iter().map(String::into_boxed_str).collect(),
+                names: vec![fixture.name.into_boxed_str()],
+
+                aliases: fixture
+                    .aliases
+                    .into_iter()
+                    .map(String::into_boxed_str)
+                    .collect(),
 
                 tags,
 
-                properties: vec![],
+                properties: fixture
+                    .properties
+                    .into_iter()
+                    .map(|p| Property {
+                        key: registry.property(&p.key),
+                        value: Value::String(p.value),
+                    })
+                    .collect(),
 
-                relationships: vec![
-                    Relationship {
-                        target: EntityID(p.company),
-                        kind: RelationshipType::MadeBy,
-                    },
-                    Relationship {
-                        target: EntityID(p.category),
-                        kind: RelationshipType::IsA,
-                    },
-                    Relationship {
-                        target: EntityID(p.country),
-                        kind: RelationshipType::LocatedIn,
-                    },
-                ],
+                relationships: entity_relationships,
 
-                sources: vec![EntitySource {
-                    external_id: format!("product:{}", p.id),
-                    provider: "fixture".into(),
-                    verified: true,
-                    created: Date::now(),
-                    updated: Date::now(),
-                }],
+                sources: vec![],
             }
         })
         .collect();
 
-    Ok(entities)
+    let tags = registry.export_tags();
+    let properties = registry.export_properties();
+
+    Ok(GeneratedDatabase {
+        entities,
+        tags,
+        properties,
+        relationships,
+    })
 }

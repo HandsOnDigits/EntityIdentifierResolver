@@ -21,6 +21,8 @@ pub struct EntitySource {
 pub struct Entity {
     pub id: EntityID,
 
+    pub entity_type: EntityType,
+
     pub names: Vec<EntityName>,
     pub aliases: Vec<Alias>,
 
