@@ -1,18 +1,23 @@
 use std::collections::HashMap;
 
-use crate::entity::{EntityDocument, types::EntityID};
+use super::properties::PropertyIndex;
+
+use crate::entity::{EntityDocument, EntityInput, types::EntityID};
 
 use super::{
-    alias::AliasIndex, bk_tree::BKTreeIndex, inverted::InvertedIndex, trie::TrieIndex,
-    utils::normalize,
+    alias::AliasIndex, bk_tree::BKTreeIndex, inverted::InvertedIndex, tags::TagIndex,
+    trie::TrieIndex, utils::normalize,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SearchSource {
-    Alias,
-    Prefix,
-    Fuzzy,
+    ExactAlias,
+    PrefixAlias,
+    FuzzyAlias,
     Token,
+    Tag,
+    Property,
+    Relationship,
 }
 
 #[derive(Debug, Clone)]
@@ -25,10 +30,14 @@ pub struct SearchResult<'a> {
 #[derive(Default)]
 pub struct Resolver {
     documents: HashMap<EntityID, EntityDocument>,
+
     alias: AliasIndex,
     trie: TrieIndex,
     fuzzy: BKTreeIndex,
-    inverted: InvertedIndex,
+
+    tokens: InvertedIndex,
+    tags: TagIndex,
+    properties: PropertyIndex,
 }
 
 impl Resolver {
@@ -37,10 +46,10 @@ impl Resolver {
     }
 
     /// Registers an entity document.
-    pub fn add(&mut self, document: EntityDocument) {
-        let id = document.id;
+    pub fn add(&mut self, input: EntityInput) {
+        let id = input.document.id;
 
-        for alias in &document.aliases {
+        for alias in &input.aliases {
             let normalized = normalize(alias);
 
             self.alias.insert(normalized.clone(), id);
@@ -48,19 +57,19 @@ impl Resolver {
             self.fuzzy.insert(&normalized, id);
 
             for token in alias.split_whitespace() {
-                self.inverted.insert(&normalize(token), id);
+                self.tokens.insert(&normalize(token), id);
             }
         }
 
-        for tag in &document.tags {
-            self.inverted.insert(&normalize(tag), id);
+        for tag in input.tags {
+            self.tags.insert(tag, id);
         }
 
-        for property in &document.properties {
-            self.inverted.insert(&normalize(property), id);
+        for property in &input.document.properties {
+            self.properties.insert(*property, id);
         }
 
-        self.documents.insert(id, document);
+        self.documents.insert(id, input.document);
     }
 
     pub fn get(&self, id: EntityID) -> Option<&EntityDocument> {
@@ -68,8 +77,8 @@ impl Resolver {
     }
 
     /// Exact alias lookup.
-    pub fn resolve(&self, alias: &str) -> Option<EntityID> {
-        self.alias.resolve(alias)
+    pub fn resolve(&self, alias: &str) -> &[EntityID] {
+        self.alias.resolve(alias).unwrap_or(&[])
     }
 
     /// Prefix search.
@@ -84,7 +93,7 @@ impl Resolver {
 
     /// Token lookup.
     pub fn lookup(&self, term: &str) -> Vec<EntityID> {
-        self.inverted.lookup(term)
+        self.tokens.lookup(term)
     }
 
     /// High-level search.
@@ -108,16 +117,16 @@ impl Resolver {
                 .or_insert(Hit { score, source });
         };
 
-        if let Some(id) = self.resolve(query) {
-            add_hit(id, 1.0, SearchSource::Alias);
+        for id in self.resolve(query) {
+            add_hit(*id, 1.0, SearchSource::ExactAlias);
         }
 
         for id in self.prefix(query) {
-            add_hit(id, 0.8, SearchSource::Prefix);
+            add_hit(id, 0.8, SearchSource::PrefixAlias);
         }
 
         for id in self.fuzzy(query, 1) {
-            add_hit(id, 0.6, SearchSource::Fuzzy);
+            add_hit(id, 0.6, SearchSource::FuzzyAlias);
         }
 
         for id in self.lookup(query) {

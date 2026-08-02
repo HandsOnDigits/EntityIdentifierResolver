@@ -1,7 +1,8 @@
 use rkyv::{Archive, Deserialize, Serialize};
 
-#[derive(Archive, Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct EntityID(pub u64);
+pub type EntityID = u64;
+pub type TagID = u32;
+pub type SourceID = u32;
 
 pub type EntityType = [u8; 4];
 
@@ -30,7 +31,11 @@ impl Date {
 
 pub type Alias = Box<str>;
 
-pub type Tag = u32;
+#[derive(Archive, Serialize, Deserialize, PartialEq, Clone, Debug)]
+pub struct Tag {
+    pub id: TagID,
+    pub name: String,
+}
 
 pub type PropertyID = u32;
 

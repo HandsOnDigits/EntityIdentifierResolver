@@ -10,6 +10,7 @@ dependencies = [
  "chrono",
  "eir-core",
  "rkyv",
+ "roaring",
  "serde",
  "serde_json",
 ]
@@ -65,6 +66,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "bytemuck"
+version = "1.25.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "95832e849adfb21180ccb6826a99da14e5d266ae5c2e668e1602cf234f153797"
+
+[[package]]
+name = "byteorder"
+version = "1.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1fd0f2584146f6f2ef48085050886acf353beff7305ebd1ae69500e27c67f64b"
+
+[[package]]
 name = "bytes"
 version = "1.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -112,6 +125,7 @@ dependencies = [
  "anyhow",
  "chrono",
  "rkyv",
+ "roaring",
  "serde",
  "serde_json",
 ]
@@ -300,6 +314,7 @@ dependencies = [
  "chrono",
  "eir-core",
  "rkyv",
+ "roaring",
  "serde",
  "serde_json",
 ]
@@ -388,6 +403,16 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.119",
+]
+
+[[package]]
+name = "roaring"
+version = "0.11.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1dedc5658c6ecb3bdb5ef5f3295bb9253f42dcf3fd1402c03f6b1f7659c3c4a9"
+dependencies = [
+ "bytemuck",
+ "byteorder",
 ]
 
 [[package]]

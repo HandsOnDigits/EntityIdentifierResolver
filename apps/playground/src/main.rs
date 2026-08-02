@@ -1,49 +1,44 @@
-use eir_core::entity::{EntityDocument, types::EntityID};
+use eir_core::entity::{EntityDocument, EntityInput, types::*};
 use eir_core::index::Resolver;
 
 fn main() {
     let mut resolver = Resolver::new();
 
-    resolver.add(EntityDocument {
-        id: EntityID(1),
+    let drink = resolver.tags.intern("drink");
+    let soft_drink = resolver.tags.intern("soft drink");
+    let brand = resolver.properties.intern("brand");
 
+    resolver.add(EntityInput {
+        document: EntityDocument {
+            id: EntityID(1),
+            entity_type: EntityType::Product,
+            sources: vec![],
+            properties: vec![brand],
+        },
         aliases: vec!["Coca Cola".into(), "Coke".into()],
-
-        tags: vec!["drink".into(), "soft drink".into()],
-
-        properties: vec!["brand".into()],
-
-        sources: vec![],
-
-        relationships: vec![],
+        tags: vec![drink, soft_drink],
     });
 
-    resolver.add(EntityDocument {
-        id: EntityID(2),
-
+    resolver.add(EntityInput {
+        document: EntityDocument {
+            id: EntityID(2),
+            entity_type: EntityType::Product,
+            sources: vec![],
+            properties: vec![],
+        },
         aliases: vec!["Pepsi".into()],
-
-        tags: vec!["drink".into()],
-
-        properties: vec![],
-
-        sources: vec![],
-
-        relationships: vec![],
+        tags: vec![drink],
     });
 
-    resolver.add(EntityDocument {
-        id: EntityID(3),
-
+    resolver.add(EntityInput {
+        document: EntityDocument {
+            id: EntityID(3),
+            entity_type: EntityType::Product,
+            sources: vec![],
+            properties: vec![],
+        },
         aliases: vec!["Coconut Water".into()],
-
-        tags: vec!["drink".into()],
-
-        properties: vec![],
-
-        sources: vec![],
-
-        relationships: vec![],
+        tags: vec![drink],
     });
 
     println!("{:#?}", resolver.search("coca"));
