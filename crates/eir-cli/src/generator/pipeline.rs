@@ -1,8 +1,8 @@
 use std::path::PathBuf;
 
-use crate::{indexer::IndexBuilder, loader, mapper, writer};
+use super::{context::GeneratorContext, loader, mapper};
 
-use eir_utils::registry::Registry;
+use eir_core::storage::indexes::IndexBuilder;
 
 pub fn generate(input: PathBuf, output: PathBuf) -> anyhow::Result<()> {
     println!("Loading entities...");
@@ -11,13 +11,13 @@ pub fn generate(input: PathBuf, output: PathBuf) -> anyhow::Result<()> {
 
     println!("Building registry...");
 
-    let mut registry = Registry::default();
+    let mut ctx = GeneratorContext::new();
 
     println!("Mapping entities...");
 
     let entities = fixtures
         .into_iter()
-        .map(|entity| mapper::map(entity, &mut registry))
+        .map(|entity| mapper::map(entity, &mut ctx))
         .collect::<Vec<_>>();
 
     println!("Building indexes...");
@@ -25,8 +25,6 @@ pub fn generate(input: PathBuf, output: PathBuf) -> anyhow::Result<()> {
     let indexes = IndexBuilder::build(&entities);
 
     println!("Writing database...");
-
-    writer::write(output, &entities, &registry, &indexes)?;
 
     Ok(())
 }

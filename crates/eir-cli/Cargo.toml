@@ -10,7 +10,7 @@ serde_json = { workspace = true }
 clap = { workspace = true }
 clap_complete = { workspace = true }
 
-eir-core = { path = "../crates/eir-core" }
+eir-core = { path = "../eir-core" }
 
 [[bin]]
 name = "eir"

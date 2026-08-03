@@ -3,13 +3,13 @@ use eir_core::entity::{
     types::{PropertyID, TagID},
 };
 
-use eir_utils::registry::Registry;
+use super::GeneratorContext;
 
-use eir_utils::fixture::{FixtureEntity, FixtureSource};
+use super::fixture::{FixtureEntity, FixtureSource};
 
-fn map_source(source: FixtureSource, registry: &mut Registry) -> EntitySource {
+fn map_source(source: FixtureSource, ctx: &mut GeneratorContext) -> EntitySource {
     EntitySource {
-        id: registry.sources.intern(&source.provider),
+        id: ctx.sources.intern(&source.provider),
 
         provider: source.provider.to_string(),
 
@@ -20,7 +20,7 @@ fn map_source(source: FixtureSource, registry: &mut Registry) -> EntitySource {
     }
 }
 
-pub fn map(entity: FixtureEntity, registry: &mut Registry) -> EntityInput {
+pub fn map(entity: FixtureEntity, ctx: &mut GeneratorContext) -> EntityInput {
     EntityInput {
         document: EntityDocument {
             id: entity.id,
@@ -29,13 +29,13 @@ pub fn map(entity: FixtureEntity, registry: &mut Registry) -> EntityInput {
             sources: entity
                 .sources
                 .into_iter()
-                .map(|source| registry.intern_source(source))
+                .map(|source| ctx.intern_source(source))
                 .collect(),
 
             properties: entity
                 .properties
                 .into_iter()
-                .map(|property| registry.properties.intern(&property))
+                .map(|property| ctx.properties.intern(&property))
                 .collect::<Vec<PropertyID>>(),
         },
 
@@ -44,7 +44,7 @@ pub fn map(entity: FixtureEntity, registry: &mut Registry) -> EntityInput {
         tags: entity
             .tags
             .into_iter()
-            .map(|tag| registry.tags.intern(&tag))
+            .map(|tag| ctx.tags.intern(&tag))
             .collect::<Vec<TagID>>(),
     }
 }
