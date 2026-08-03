@@ -1,6 +1,7 @@
-mod registry;
+pub mod posting_list;
+pub mod registry;
 
-use std::fs::File;
+/*use std::fs::File;
 use std::io::Seek;
 
 pub fn load_entity<'a>(file_buffer: &'a [u8], entry: EntityIndexEntry) -> &'a ArchivedEntity {
@@ -23,3 +24,4 @@ pub fn save_entity(file: &mut File, entity: &Entity) -> Result<u64, EntityError>
 
     Ok(offset)
 }
+*/

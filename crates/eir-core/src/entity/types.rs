@@ -1,8 +1,21 @@
 use rkyv::{Archive, Deserialize, Serialize};
 
 pub type EntityID = u64;
+
 pub type TagID = u32;
+
+#[derive(Archive, Serialize, Deserialize, PartialEq, Clone, Debug)]
+pub struct Tag {
+    pub id: TagID,
+    pub name: String,
+}
+
 pub type SourceID = u32;
+#[derive(Archive, Serialize, Deserialize, PartialEq, Clone, Debug)]
+pub struct Source {
+    pub id: SourceID,
+    pub name: String,
+}
 
 pub type EntityType = [u8; 4];
 
@@ -31,13 +44,13 @@ impl Date {
 
 pub type Alias = Box<str>;
 
-#[derive(Archive, Serialize, Deserialize, PartialEq, Clone, Debug)]
-pub struct Tag {
-    pub id: TagID,
-    pub name: String,
-}
-
 pub type PropertyID = u32;
+
+#[derive(Archive, Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct Property {
+    pub key: PropertyID,
+    pub value: Value,
+}
 
 #[derive(Archive, Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum Value {
@@ -46,12 +59,6 @@ pub enum Value {
     Float(f64),
     Boolean(bool),
     Entity(EntityID),
-}
-
-#[derive(Archive, Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct Property {
-    pub key: PropertyID,
-    pub value: Value,
 }
 
 #[derive(Debug)]

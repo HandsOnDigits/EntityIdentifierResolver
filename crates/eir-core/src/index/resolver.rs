@@ -1,12 +1,14 @@
 use std::collections::HashMap;
 
-use super::properties::PropertyIndex;
-
-use crate::entity::{EntityDocument, EntityInput, types::EntityID};
+use crate::{
+    entity::types::{EntityID, PropertyID, SourceID, TagID},
+    entity::{EntityDocument, EntityInput},
+    storage::posting_list::PostingList,
+};
 
 use super::{
-    alias::AliasIndex, bk_tree::BKTreeIndex, inverted::InvertedIndex, tags::TagIndex,
-    trie::TrieIndex, utils::normalize,
+    alias::AliasIndex, bk_tree::BKTreeIndex, inverted::InvertedIndex, trie::TrieIndex,
+    utils::normalize,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -34,10 +36,11 @@ pub struct Resolver {
     alias: AliasIndex,
     trie: TrieIndex,
     fuzzy: BKTreeIndex,
-
     tokens: InvertedIndex,
-    tags: TagIndex,
-    properties: PropertyIndex,
+
+    tags: PostingList<TagID>,
+    properties: PostingList<PropertyID>,
+    sources: PostingList<SourceID>,
 }
 
 impl Resolver {
@@ -69,6 +72,10 @@ impl Resolver {
             self.properties.insert(*property, id);
         }
 
+        for source in &input.document.sources {
+            self.sources.insert(*source, id);
+        }
+
         self.documents.insert(id, input.document);
     }
 
@@ -83,17 +90,17 @@ impl Resolver {
 
     /// Prefix search.
     pub fn prefix(&self, prefix: &str) -> Vec<EntityID> {
-        self.trie.prefix(prefix)
+        self.trie.prefix(&normalize(prefix))
     }
 
     /// Fuzzy search.
     pub fn fuzzy(&self, query: &str, distance: usize) -> Vec<EntityID> {
-        self.fuzzy.search(query, distance)
+        self.fuzzy.search(&normalize(query), distance)
     }
 
     /// Token lookup.
     pub fn lookup(&self, term: &str) -> Vec<EntityID> {
-        self.tokens.lookup(term)
+        self.tokens.lookup(&normalize(term))
     }
 
     /// High-level search.
