@@ -1,17 +1,28 @@
 mod builder;
+pub mod database;
+mod search;
+
+pub use builder::EngineBuilder;
+pub use database::Database;
 
 use std::path::Path;
 
-use crate::{error::Result, storage::Backend};
+use crate::{error::Result, index::Resolver, storage::Backend};
 
 pub struct Engine {
     backend: Backend,
+    resolver: Resolver,
 }
 
 impl Engine {
     pub fn open(path: impl AsRef<Path>) -> Result<Self> {
         Ok(Self {
             backend: Backend::open(path)?,
+            resolver: Resolver::default(),
         })
+    }
+
+    pub fn flush(&self) -> Result<()> {
+        self.backend.flush()
     }
 }

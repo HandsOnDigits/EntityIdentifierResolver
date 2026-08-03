@@ -29,7 +29,7 @@ pub struct SearchResult<'a> {
     pub source: SearchSource,
 }
 
-#[derive(Default)]
+#[derive(Debug)]
 pub struct Resolver {
     documents: HashMap<EntityID, EntityDocument>,
 
@@ -153,5 +153,22 @@ impl Resolver {
 
         results.sort_by(|a, b| b.score.total_cmp(&a.score));
         results
+    }
+}
+
+impl Default for Resolver {
+    fn default() -> Self {
+        Self {
+            documents: HashMap::new(),
+
+            properties: Default::default(),
+            sources: Default::default(),
+            tags: PostingList::default(),
+
+            alias: AliasIndex::default(),
+            trie: TrieIndex::default(),
+            fuzzy: BKTreeIndex::default(),
+            tokens: InvertedIndex::default(),
+        }
     }
 }

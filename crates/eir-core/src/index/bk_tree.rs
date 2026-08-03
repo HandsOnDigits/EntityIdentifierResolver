@@ -1,6 +1,6 @@
 use crate::entity::types::EntityID;
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct BKTreeIndex {
     entries: Vec<(String, EntityID)>,
 }

@@ -18,4 +18,8 @@ impl Backend {
     pub fn store(&self) -> &Store {
         &self.store
     }
+
+    pub fn flush(&self) -> Result<()> {
+        self.store.save()
+    }
 }

@@ -1,6 +1,6 @@
 use rkyv::{Archive, Deserialize, Serialize};
 
-use eir_core::entity::types::{Date, EntityID};
+use eir_core::prelude::*;
 
 #[derive(Archive, Serialize, Deserialize, Debug, Clone)]
 pub struct FixtureEntity {

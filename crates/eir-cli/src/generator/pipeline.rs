@@ -1,30 +1,30 @@
-use std::path::PathBuf;
+use eir_core::Database;
 
-use super::{context::GeneratorContext, loader, mapper};
+use super::{context::GeneratorContext, loader::load_entities, mapper, writer::write_database};
 
-use eir_core::storage::indexes::IndexBuilder;
-
-pub fn generate(input: PathBuf, output: PathBuf) -> anyhow::Result<()> {
-    println!("Loading entities...");
-
-    let fixtures = loader::load(input)?;
-
-    println!("Building registry...");
-
+pub fn generate() -> anyhow::Result<()> {
     let mut ctx = GeneratorContext::new();
 
-    println!("Mapping entities...");
+    let fixtures = load_entities()?;
 
-    let entities = fixtures
+    let inputs = fixtures
         .into_iter()
         .map(|entity| mapper::map(entity, &mut ctx))
         .collect::<Vec<_>>();
 
-    println!("Building indexes...");
+    let entities = inputs.iter().map(|input| input.document.clone()).collect();
 
-    let indexes = IndexBuilder::build(&entities);
+    let aliases = inputs.iter().map(|input| input.aliases.clone()).collect();
 
-    println!("Writing database...");
+    let database = Database {
+        entities,
+        aliases,
+        sources: ctx.sources.into_inner(),
+        properties: ctx.properties.into_inner(),
+        tags: ctx.tags.into_inner(),
+    };
+
+    write_database(database)?;
 
     Ok(())
 }

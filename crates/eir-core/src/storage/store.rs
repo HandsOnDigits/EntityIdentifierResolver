@@ -31,4 +31,8 @@ impl Store {
         // read serialized data
         todo!()
     }
+
+    pub fn save(&self) -> Result<()> {
+        Ok(())
+    }
 }

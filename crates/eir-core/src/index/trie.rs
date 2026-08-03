@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::entity::types::EntityID;
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct TrieIndex {
     entries: HashMap<String, Vec<EntityID>>,
 }

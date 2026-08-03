@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::{entity::types::EntityID, index::utils::normalize};
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct AliasIndex {
     aliases: HashMap<String, Vec<EntityID>>,
 }

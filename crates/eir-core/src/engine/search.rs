@@ -1,10 +1,14 @@
-use crate::{entity::EntityDocument, error::Result};
+use crate::index::SearchResult;
 
-pub struct SearchResult {
-    pub entity: EntityDocument,
-    pub score: f32,
+use super::Engine;
+
+#[allow(dead_code)]
+pub trait SearchEngine {
+    fn search<'a>(&'a self, query: &str) -> Vec<SearchResult<'a>>;
 }
 
-pub trait SearchEngine {
-    fn search(&self, query: &str) -> Result<Vec<SearchResult>>;
+impl SearchEngine for Engine {
+    fn search<'a>(&'a self, query: &str) -> Vec<SearchResult<'a>> {
+        self.resolver.search(query)
+    }
 }

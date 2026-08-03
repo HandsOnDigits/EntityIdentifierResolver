@@ -1,7 +1,4 @@
-use eir_core::{
-    entity::types::{EntityID, PropertyID, SourceID, TagID},
-    storage::{Registry, Store, indexes::Indexes},
-};
+use eir_core::prelude::*;
 
 use super::fixture::FixtureSource;
 

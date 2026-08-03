@@ -1,17 +1,13 @@
-use eir_core::entity::{
-    EntityDocument, EntityInput, EntitySource,
-    types::{PropertyID, TagID},
-};
+use eir_core::prelude::*;
 
 use super::GeneratorContext;
-
 use super::fixture::{FixtureEntity, FixtureSource};
 
 fn map_source(source: FixtureSource, ctx: &mut GeneratorContext) -> EntitySource {
     EntitySource {
         id: ctx.sources.intern(&source.provider),
 
-        provider: source.provider.to_string(),
+        provider: source.provider,
 
         verified: source.verified,
 
@@ -29,14 +25,17 @@ pub fn map(entity: FixtureEntity, ctx: &mut GeneratorContext) -> EntityInput {
             sources: entity
                 .sources
                 .into_iter()
-                .map(|source| ctx.intern_source(source))
+                .map(|source| {
+                    let source = map_source(source, ctx);
+                    source.id
+                })
                 .collect(),
 
             properties: entity
                 .properties
                 .into_iter()
                 .map(|property| ctx.properties.intern(&property))
-                .collect::<Vec<PropertyID>>(),
+                .collect(),
         },
 
         aliases: entity.names,
@@ -45,6 +44,6 @@ pub fn map(entity: FixtureEntity, ctx: &mut GeneratorContext) -> EntityInput {
             .tags
             .into_iter()
             .map(|tag| ctx.tags.intern(&tag))
-            .collect::<Vec<TagID>>(),
+            .collect(),
     }
 }

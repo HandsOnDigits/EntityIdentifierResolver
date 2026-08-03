@@ -8,7 +8,7 @@ use rkyv::{Archive, Deserialize, Serialize};
 pub struct EntitySource {
     pub id: SourceID,
 
-    pub provider: String,
+    pub provider: Box<str>,
 
     pub verified: bool,
 
@@ -40,11 +40,18 @@ pub struct EntityDocument {
 
     pub entity_type: EntityType,
 
-    pub sources: Vec<SourceID>,
-
     pub properties: Vec<PropertyID>,
+
+    pub sources: Vec<SourceID>,
 }
 
+impl From<EntityInput> for EntityDocument {
+    fn from(input: EntityInput) -> Self {
+        input.document
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct EntityInput {
     pub document: EntityDocument,
 
