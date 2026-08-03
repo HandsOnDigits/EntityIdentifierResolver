@@ -10,5 +10,4 @@ anyhow = { workspace = true }
 roaring = { workspace = true }
 
 eir-core = { path = "../../crates/eir-core" }
-eir-utils = { path = "../../crates/eir-utils" }
 eir-utils = { path = "../../crates/eir-tools" }

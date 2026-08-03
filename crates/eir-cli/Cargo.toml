@@ -1,0 +1,17 @@
+[package]
+name = "eir-cli"
+version = "0.0.0"
+edition = "2024"
+
+[dependencies]
+rkyv = { workspace = true }
+anyhow = { workspace = true }
+serde_json = { workspace = true }
+clap = { workspace = true }
+clap_complete = { workspace = true }
+
+eir-core = { path = "../crates/eir-core" }
+
+[[bin]]
+name = "eir"
+path = "src/main.rs"
