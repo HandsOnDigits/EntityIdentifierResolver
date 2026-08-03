@@ -1,42 +1,13 @@
-use anyhow::Result;
-use serde::Deserialize;
-use std::fs;
+use rkyv::{access, deserialize, rancor::Error};
 
-#[derive(Debug, Deserialize)]
-pub struct EntityFixture {
-    pub id: u64,
+use eir_utils::fixture::FixtureEntity;
 
-    pub entity_type: String,
+pub fn load(path: impl AsRef<std::path::Path>) -> anyhow::Result<Vec<FixtureEntity>> {
+    let bytes = std::fs::read(path)?;
 
-    pub name: String,
+    let archived = access::<rkyv::Archived<Vec<FixtureEntity>>, Error>(&bytes)?;
 
-    #[serde(default)]
-    pub aliases: Vec<String>,
+    let entities: Vec<FixtureEntity> = deserialize::<Vec<FixtureEntity>, Error>(archived)?;
 
-    #[serde(default)]
-    pub tags: Vec<String>,
-
-    #[serde(default)]
-    pub properties: Vec<PropertyFixture>,
-
-    #[serde(default)]
-    pub relationships: Vec<RelationshipFixture>,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct RelationshipFixture {
-    pub target: u64,
-    pub kind: String,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct PropertyFixture {
-    pub key: String,
-    pub value: String,
-}
-
-pub fn load_entities(path: &str) -> Result<Vec<EntityFixture>> {
-    let data = fs::read_to_string(path)?;
-
-    Ok(serde_json::from_str(&data)?)
+    Ok(entities)
 }

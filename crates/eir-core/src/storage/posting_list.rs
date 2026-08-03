@@ -23,4 +23,8 @@ where
             .map(|entities| entities.iter().collect())
             .unwrap_or_default()
     }
+
+    pub fn iter(&self) -> impl Iterator<Item = (&K, &RoaringTreemap)> {
+        self.index.iter()
+    }
 }

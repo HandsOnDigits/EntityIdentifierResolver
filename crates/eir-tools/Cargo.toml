@@ -1,5 +1,5 @@
 [package]
-name = "admin-ui"
+name = "eir-tools"
 version = "0.0.0"
 edition = "2024"
 
@@ -10,4 +10,3 @@ anyhow = { workspace = true }
 roaring = { workspace = true }
 
 eir-core = { path = "../../crates/eir-core" }
-eir-utils = { path = "../../crates/eir-utils" }

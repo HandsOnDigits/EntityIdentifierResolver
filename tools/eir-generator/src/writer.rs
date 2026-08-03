@@ -1,21 +1,15 @@
-use anyhow::Result;
-use rkyv::{Archive, Serialize, to_bytes};
-use std::fs;
+use std::path::Path;
 
-pub fn write_binary<T>(path: &str, value: &T) -> Result<()>
-where
-    T: Archive,
-    T: for<'a> Serialize<
-        rkyv::api::high::HighSerializer<
-            rkyv::util::AlignedVec,
-            rkyv::ser::allocator::ArenaHandle<'a>,
-            rkyv::rancor::Error,
-        >,
-    >,
-{
-    let bytes = to_bytes::<rkyv::rancor::Error>(value)?;
+use crate::indexer::Indexes;
+use eir_core::entity::EntityInput;
+use eir_utils::registry::Registry;
 
-    fs::write(path, &bytes)?;
-
-    Ok(())
+pub fn write(
+    path: impl AsRef<Path>,
+    inputs: &[EntityInput],
+    registry: &Registry,
+    indexes: &Indexes,
+) -> anyhow::Result<()> {
+    let _ = (path.as_ref(), inputs, registry, indexes);
+    todo!("serialize database")
 }

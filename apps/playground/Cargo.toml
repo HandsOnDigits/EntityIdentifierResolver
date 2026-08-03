@@ -7,8 +7,8 @@ edition = "2024"
 chrono = { workspace = true }
 rkyv = { workspace = true }
 anyhow = { workspace = true }
-serde_json = { workspace = true }
-serde = { workspace = true }
 roaring = { workspace = true }
 
 eir-core = { path = "../../crates/eir-core" }
+eir-utils = { path = "../../crates/eir-utils" }
+eir-utils = { path = "../../crates/eir-tools" }
