@@ -1,7 +1,6 @@
 mod builder;
 mod cli;
 mod commands;
-mod debug;
 
 use clap::CommandFactory;
 
@@ -11,7 +10,7 @@ use clap_complete::{
     shells::{Bash, Elvish, Fish, PowerShell, Zsh},
 };
 
-use cli::{Cli, Commands, Shell};
+use cli::{Cli, Commands, IndexCommands, Shell};
 
 fn generate_completions(shell: Shell) -> std::io::Result<()> {
     let mut cmd = Cli::command();
@@ -44,9 +43,15 @@ fn main() -> anyhow::Result<()> {
             commands::build::execute(input, output)?;
         }
 
-        Commands::Index { command } => {
-            println!("Index command: {:?}", command);
-        }
+        Commands::Index { command } => match command {
+            IndexCommands::Build { input, output } => {
+                commands::build::execute(input.into(), output.into())?;
+            }
+
+            IndexCommands::Stats { path } => {
+                commands::stats::execute(path.into())?;
+            }
+        },
     }
 
     Ok(())
