@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 rkyv = { workspace = true }
+bytecheck = { workspace = true }
 anyhow = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
