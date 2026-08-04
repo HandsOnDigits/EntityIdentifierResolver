@@ -278,6 +278,7 @@
     "relationships": [],
     "sources": []
   },
+
   {
     "id": 2001,
     "names": ["Snack", "Snack Food"],
@@ -286,6 +287,7 @@
     "relationships": [],
     "sources": []
   },
+
   {
     "id": 2002,
     "names": ["Bakery", "Bread"],
@@ -294,6 +296,7 @@
     "relationships": [],
     "sources": []
   },
+
   {
     "id": 2003,
     "names": ["Frozen Food", "Frozen"],
@@ -302,6 +305,7 @@
     "relationships": [],
     "sources": []
   },
+
   {
     "id": 2004,
     "names": ["Plant Based", "Vegan"],
@@ -310,6 +314,7 @@
     "relationships": [],
     "sources": []
   },
+
   {
     "id": 3000,
     "names": ["Denmark", "DK"],
@@ -318,6 +323,7 @@
     "relationships": [],
     "sources": []
   },
+
   {
     "id": 3001,
     "names": ["Sweden", "SE"],
@@ -326,6 +332,7 @@
     "relationships": [],
     "sources": []
   },
+
   {
     "id": 3002,
     "names": ["Norway", "NO"],
@@ -334,17 +341,10 @@
     "relationships": [],
     "sources": []
   },
+
   {
     "id": 3003,
     "names": ["Finland", "FI"],
-    "tags": ["country", "europe"],
-    "properties": [],
-    "relationships": [],
-    "sources": []
-  },
-  {
-    "id": 3004,
-    "names": ["Germany", "DE"],
     "tags": ["country", "europe"],
     "properties": [],
     "relationships": [],
