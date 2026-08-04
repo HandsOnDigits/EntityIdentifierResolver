@@ -1,0 +1,2 @@
+[alias]
+eir = "run -p eir-cli --"
