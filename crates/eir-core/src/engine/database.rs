@@ -1,4 +1,4 @@
-use rkyv::{Archive, Deserialize, Serialize};
+use rkyv::{Archive, Deserialize, Serialize, bytecheck::CheckBytes};
 
 use crate::{
     entity::{
@@ -8,7 +8,7 @@ use crate::{
     storage::PostingListRecord,
 };
 
-#[derive(Debug, Archive, Serialize, Deserialize)]
+#[derive(Debug, Archive, Serialize, Deserialize, CheckBytes)]
 pub struct Database {
     pub entities: Vec<EntityDocument>,
 
