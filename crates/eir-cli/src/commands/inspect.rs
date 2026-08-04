@@ -11,6 +11,10 @@ pub struct InspectArgs {
 
     #[arg(short, long)]
     pub entity: u64,
+
+    /// Show internal IDs
+    #[arg(short, long)]
+    pub verbose: bool,
 }
 
 pub fn execute(args: InspectArgs) -> Result<()> {
@@ -34,14 +38,26 @@ pub fn execute(args: InspectArgs) -> Result<()> {
 
     println!("Tags:");
     for tag in entity.tags.iter() {
-        println!("  {}", database.tags[tag.to_native() as usize]);
+        if args.verbose {
+            println!("  {} ({})", database.tags[tag.to_native() as usize], tag);
+        } else {
+            println!("  {}", database.tags[tag.to_native() as usize]);
+        }
     }
 
     println!();
 
     println!("Properties:");
     for property in entity.properties.iter() {
-        println!("  {}", database.properties[property.to_native() as usize]);
+        if args.verbose {
+            println!(
+                "  {} ({})",
+                database.properties[property.to_native() as usize],
+                property
+            );
+        } else {
+            println!("  {}", database.properties[property.to_native() as usize]);
+        }
     }
 
     println!();
@@ -51,19 +67,44 @@ pub fn execute(args: InspectArgs) -> Result<()> {
         let target = database
             .entities
             .iter()
-            .find(|e| e.id == relationship.target)
-            .and_then(|e| e.aliases.first())
-            .map(|name| &**name)
-            .unwrap_or("Unknown");
+            .find(|e| e.id == relationship.target);
 
-        println!("  {} -> {}", relationship.kind.as_str(), target);
+        match target {
+            Some(target) => {
+                let name = target.aliases.first().map(|x| &**x).unwrap_or("Unknown");
+
+                if args.verbose {
+                    println!(
+                        "  {} -> {} ({})",
+                        relationship.kind.as_str(),
+                        name,
+                        relationship.target
+                    );
+                } else {
+                    println!("  {} -> {}", relationship.kind.as_str(), name);
+                }
+            }
+            None => {
+                println!(
+                    "  {} -> Unknown ({})",
+                    relationship.kind.as_str(),
+                    relationship.target
+                );
+            }
+        }
     }
 
     println!();
 
     println!("Sources:");
     for source in entity.sources.iter() {
-        println!("  {}", database.sources[source.to_native() as usize]);
+        let name = &database.sources[source.to_native() as usize];
+
+        if args.verbose {
+            println!("  {} ({})", name, source.to_native());
+        } else {
+            println!("  {}", name);
+        }
     }
 
     Ok(())
