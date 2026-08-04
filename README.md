@@ -1,7 +1,7 @@
 # Entity-Identifier-Resolver (EIR)
 
 # ⚠️Warning⚠️
-This is *NOT* encrypted.
+EIR is *NOT* encrypted.
 Do *NOT* use it to store sensitive data!
 It is optimized for search.
 
