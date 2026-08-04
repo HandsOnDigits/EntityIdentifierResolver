@@ -1,17 +1,21 @@
+use rkyv::{Archive, Deserialize, Serialize};
+
 use crate::entity::types::EntityID;
 
 #[derive(Default, Debug)]
 pub struct BKTreeIndex {
-    entries: Vec<(String, EntityID)>,
+    root: Vec<(Box<str>, EntityID)>,
 }
+
+use super::utils::normalize;
 
 impl BKTreeIndex {
     pub fn insert(&mut self, text: &str, entity_id: EntityID) {
-        self.entries.push((text.to_lowercase(), entity_id));
+        self.root.push((normalize(text), entity_id));
     }
 
     pub fn search(&self, query: &str, distance: usize) -> Vec<EntityID> {
-        self.entries
+        self.root
             .iter()
             .filter_map(|(text, id)| {
                 if levenshtein(text, query) <= distance {
@@ -20,6 +24,13 @@ impl BKTreeIndex {
                     None
                 }
             })
+            .collect()
+    }
+
+    pub fn export(&self) -> Vec<(Box<str>, Vec<EntityID>)> {
+        self.root
+            .iter()
+            .map(|(key, entity)| (key.clone(), vec![*entity]))
             .collect()
     }
 }
@@ -45,4 +56,29 @@ fn levenshtein(a: &str, b: &str) -> usize {
     }
 
     prev[b.len()]
+}
+
+#[derive(Archive, Serialize, Deserialize, Debug, Clone, Default)]
+pub struct BKTreeIndexRecord {
+    pub entries: Vec<(Box<str>, Vec<EntityID>)>,
+}
+
+impl BKTreeIndex {
+    pub fn to_record(&self) -> BKTreeIndexRecord {
+        BKTreeIndexRecord {
+            entries: self.export(),
+        }
+    }
+
+    pub fn from_record(record: BKTreeIndexRecord) -> Self {
+        let mut trie = Self::default();
+
+        for (word, ids) in record.entries {
+            for id in ids {
+                trie.insert(&word, id);
+            }
+        }
+
+        trie
+    }
 }
