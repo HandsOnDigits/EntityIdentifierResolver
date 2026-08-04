@@ -17,25 +17,27 @@ pub fn build(
         .map(|entity| mapper::map(entity, &mut ctx))
         .collect::<Vec<_>>();
 
-    let mut entities = Vec::with_capacity(inputs.len());
-    let mut aliases = HashMap::new();
-
-    for entity in &inputs {
-        entities.push(entity.clone());
-
-        aliases.insert(entity.id, entity.clone());
-    }
-
     let indexes = IndexBuilder::build(&inputs);
+
+    let mut aliases = HashMap::new();
+    let mut entities = Vec::new();
+
+    for input in inputs {
+        aliases.insert(input.id, input.aliases.clone());
+
+        entities.push(input);
+    }
 
     let database = Database {
         entities,
+        aliases,
+
         tags: ctx.tags.into_inner(),
         sources: ctx.sources.into_inner(),
         properties: ctx.properties.into_inner(),
 
-        tag_index: indexes.tags.to_archive(),
-        source_index: indexes.sources.to_archive(),
+        tag_index: indexes.tags.to_record(),
+        source_index: indexes.sources.to_record(),
     };
 
     write_database(database, output)?;
