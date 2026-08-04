@@ -1,3 +1,3 @@
-pub fn normalize(value: &str) -> String {
-    value.to_lowercase().replace("-", " ").trim().to_string()
+pub fn normalize(value: &str) -> Box<str> {
+    value.to_lowercase().replace('-', " ").trim().into()
 }
