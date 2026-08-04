@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use crate::{
+    entity::EntityDocument,
     entity::types::{EntityID, PropertyID, SourceID, TagID},
-    entity::{EntityDocument, EntityInput},
     storage::posting_list::PostingList,
 };
 
@@ -49,8 +49,8 @@ impl Resolver {
     }
 
     /// Registers an entity document.
-    pub fn add(&mut self, input: EntityInput) {
-        let id = input.document.id;
+    pub fn add(&mut self, input: EntityDocument) {
+        let id = input.id;
 
         for alias in &input.aliases {
             let normalized = normalize(alias);
@@ -64,19 +64,19 @@ impl Resolver {
             }
         }
 
-        for tag in input.tags {
-            self.tags.insert(tag, id);
+        for tag in &input.tags {
+            self.tags.insert(*tag, id);
         }
 
-        for property in &input.document.properties {
+        for property in &input.properties {
             self.properties.insert(*property, id);
         }
 
-        for source in &input.document.sources {
+        for source in &input.sources {
             self.sources.insert(*source, id);
         }
 
-        self.documents.insert(id, input.document);
+        self.documents.insert(id, input);
     }
 
     pub fn get(&self, id: EntityID) -> Option<&EntityDocument> {
@@ -161,14 +161,14 @@ impl Default for Resolver {
         Self {
             documents: HashMap::new(),
 
-            properties: Default::default(),
-            sources: Default::default(),
-            tags: PostingList::default(),
-
             alias: AliasIndex::default(),
             trie: TrieIndex::default(),
             fuzzy: BKTreeIndex::default(),
             tokens: InvertedIndex::default(),
+
+            tags: PostingList::<TagID>::default(),
+            properties: PostingList::<PropertyID>::default(),
+            sources: PostingList::<SourceID>::default(),
         }
     }
 }

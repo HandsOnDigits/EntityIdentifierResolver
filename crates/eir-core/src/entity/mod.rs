@@ -40,22 +40,11 @@ pub struct EntityDocument {
 
     pub entity_type: EntityType,
 
-    pub properties: Vec<PropertyID>,
-
-    pub sources: Vec<SourceID>,
-}
-
-impl From<EntityInput> for EntityDocument {
-    fn from(input: EntityInput) -> Self {
-        input.document
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct EntityInput {
-    pub document: EntityDocument,
-
     pub aliases: Vec<EntityName>,
 
     pub tags: Vec<TagID>,
+
+    pub properties: Vec<PropertyID>,
+
+    pub sources: Vec<SourceID>,
 }

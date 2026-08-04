@@ -16,27 +16,10 @@ fn map_source(source: FixtureSource, ctx: &mut GeneratorContext) -> EntitySource
     }
 }
 
-pub fn map(entity: FixtureEntity, ctx: &mut GeneratorContext) -> EntityInput {
-    EntityInput {
-        document: EntityDocument {
-            id: entity.id,
-            entity_type: entity.entity_type,
-
-            sources: entity
-                .sources
-                .into_iter()
-                .map(|source| {
-                    let source = map_source(source, ctx);
-                    source.id
-                })
-                .collect(),
-
-            properties: entity
-                .properties
-                .into_iter()
-                .map(|property| ctx.properties.intern(&property))
-                .collect(),
-        },
+pub fn map(entity: FixtureEntity, ctx: &mut GeneratorContext) -> EntityDocument {
+    EntityDocument {
+        id: entity.id,
+        entity_type: entity.entity_type,
 
         aliases: entity.names,
 
@@ -44,6 +27,21 @@ pub fn map(entity: FixtureEntity, ctx: &mut GeneratorContext) -> EntityInput {
             .tags
             .into_iter()
             .map(|tag| ctx.tags.intern(&tag))
+            .collect(),
+
+        properties: entity
+            .properties
+            .into_iter()
+            .map(|property| ctx.properties.intern(&property))
+            .collect(),
+
+        sources: entity
+            .sources
+            .into_iter()
+            .map(|source| {
+                let source = map_source(source, ctx);
+                source.id
+            })
             .collect(),
     }
 }

@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, ops::Index};
 
 pub trait RegistryID: Copy {
     fn from_index(index: usize) -> Self;
@@ -27,8 +27,8 @@ impl RegistryID for u64 {
 
 #[derive(Debug, Default)]
 pub struct Registry<ID: RegistryID> {
-    values: Vec<String>,
-    lookup: HashMap<String, ID>,
+    values: Vec<Box<str>>,
+    lookup: HashMap<Box<str>, ID>,
 }
 
 impl<ID: RegistryID> Registry<ID> {
@@ -39,17 +39,47 @@ impl<ID: RegistryID> Registry<ID> {
 
         let id = ID::from_index(self.values.len());
 
-        self.values.push(value.to_string());
-        self.lookup.insert(value.to_string(), id);
+        let value: Box<str> = value.into();
+
+        self.values.push(value.clone());
+        self.lookup.insert(value, id);
 
         id
     }
 
     pub fn get(&self, id: ID) -> Option<&str> {
-        self.values.get(id.index()).map(String::as_str)
+        self.values.get(id.index()).map(Box::as_ref)
+    }
+
+    pub fn contains(&self, value: &str) -> bool {
+        self.lookup.contains_key(value)
+    }
+
+    pub fn id(&self, value: &str) -> Option<ID> {
+        self.lookup.get(value).copied()
     }
 
     pub fn len(&self) -> usize {
         self.values.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.values.is_empty()
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = &str> {
+        self.values.iter().map(Box::as_ref)
+    }
+
+    pub fn into_inner(self) -> Vec<Box<str>> {
+        self.values
+    }
+}
+
+impl<ID: RegistryID> Index<ID> for Registry<ID> {
+    type Output = str;
+
+    fn index(&self, id: ID) -> &Self::Output {
+        &self.values[id.index()]
     }
 }

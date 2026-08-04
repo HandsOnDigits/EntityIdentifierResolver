@@ -1,7 +1,7 @@
 use rkyv::{Archive, Deserialize, Serialize};
 
 use crate::entity::{
-    EntityInput,
+    EntityDocument,
     types::{SourceID, TagID},
 };
 
@@ -22,18 +22,18 @@ pub struct ArchivedIndexes {
 pub struct IndexBuilder;
 
 impl IndexBuilder {
-    pub fn build(inputs: &[EntityInput]) -> Indexes {
-        let mut tags = PostingList::default();
-        let mut sources = PostingList::default();
+    pub fn build(inputs: &[EntityDocument]) -> Indexes {
+        let mut tags = PostingList::<TagID>::default();
+        let mut sources = PostingList::<SourceID>::default();
 
         for input in inputs {
-            let entity_id = input.document.id;
+            let entity_id = input.id;
 
             for tag in &input.tags {
                 tags.insert(*tag, entity_id);
             }
 
-            for source in &input.document.sources {
+            for source in &input.sources {
                 sources.insert(*source, entity_id);
             }
         }
