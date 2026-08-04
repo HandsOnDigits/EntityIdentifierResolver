@@ -9,6 +9,7 @@ members = [
 [workspace.dependencies]
 chrono = "0.4.45"
 rkyv = { version = "0.8.17", features = ["bytecheck"] }
+bytecheck = "0.8.2"
 serde = { version = "1.0.229", features = ["derive"] }
 anyhow = "1.0.104"
 roaring = "0.11.4"
