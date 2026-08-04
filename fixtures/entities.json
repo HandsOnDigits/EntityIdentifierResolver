@@ -178,5 +178,95 @@
         "verified": true
       }
     ]
+  },
+
+  {
+    "id": 4,
+    "names": ["Moonlight Oat Blend", "Oat Blend"],
+    "tags": ["oat", "plant", "drink", "food"],
+    "properties": [],
+    "relationships": [{ "target": 1003, "kind": "MadeBy" }],
+    "sources": [{ "provider": "Open Food Facts", "verified": true }]
+  },
+
+  {
+    "id": 5,
+    "names": ["FrostPeak Pizza Bites", "Pizza Bites"],
+    "tags": ["pizza", "frozen", "snack", "food"],
+    "properties": [],
+    "relationships": [{ "target": 1004, "kind": "MadeBy" }],
+    "sources": [{ "provider": "Open Food Facts", "verified": true }]
+  },
+
+  {
+    "id": 6,
+    "names": ["Aurora Tomato Soup", "Tomato Soup"],
+    "tags": ["soup", "vegetable", "food"],
+    "properties": [],
+    "relationships": [{ "target": 1000, "kind": "MadeBy" }],
+    "sources": [{ "provider": "Open Food Facts", "verified": true }]
+  },
+
+  {
+    "id": 7,
+    "names": ["Aurora Wholegrain Bread", "Wholegrain Bread"],
+    "tags": ["bread", "bakery", "food"],
+    "properties": [],
+    "relationships": [{ "target": 1000, "kind": "MadeBy" }],
+    "sources": [{ "provider": "Open Food Facts", "verified": true }]
+  },
+
+  {
+    "id": 8,
+    "names": ["Golden Harvest Muesli", "Harvest Muesli"],
+    "tags": ["breakfast", "grain", "food"],
+    "properties": [],
+    "relationships": [{ "target": 1001, "kind": "MadeBy" }],
+    "sources": [{ "provider": "Open Food Facts", "verified": true }]
+  },
+
+  {
+    "id": 9,
+    "names": ["Golden Harvest Oat Cookies", "Oat Cookies"],
+    "tags": ["cookie", "oat", "snack", "food"],
+    "properties": [],
+    "relationships": [{ "target": 1001, "kind": "MadeBy" }],
+    "sources": [{ "provider": "Open Food Facts", "verified": true }]
+  },
+
+  {
+    "id": 10,
+    "names": ["PureSpring Mineral Water", "Mineral Water"],
+    "tags": ["water", "mineral", "drink", "food"],
+    "properties": [],
+    "relationships": [{ "target": 1002, "kind": "MadeBy" }],
+    "sources": [{ "provider": "Open Food Facts", "verified": true }]
+  },
+
+  {
+    "id": 11,
+    "names": ["PureSpring Sparkling Water", "Sparkling Water"],
+    "tags": ["water", "sparkling", "drink", "food"],
+    "properties": [],
+    "relationships": [{ "target": 1002, "kind": "MadeBy" }],
+    "sources": [{ "provider": "Open Food Facts", "verified": true }]
+  },
+
+  {
+    "id": 12,
+    "names": ["Moon Plant Burger", "Plant Burger"],
+    "tags": ["plant", "burger", "food"],
+    "properties": [],
+    "relationships": [{ "target": 1003, "kind": "MadeBy" }],
+    "sources": [{ "provider": "Open Food Facts", "verified": true }]
+  },
+
+  {
+    "id": 13,
+    "names": ["FrostPeak Chicken Nuggets", "Chicken Nuggets"],
+    "tags": ["chicken", "frozen", "food"],
+    "properties": [],
+    "relationships": [{ "target": 1004, "kind": "MadeBy" }],
+    "sources": [{ "provider": "Open Food Facts", "verified": true }]
   }
 ]
