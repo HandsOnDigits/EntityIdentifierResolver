@@ -1,9 +1,9 @@
 use eir_core::prelude::*;
 
-use super::GeneratorContext;
+use super::BuilderContext;
 use super::fixture::{FixtureEntity, FixtureSource};
 
-fn map_source(source: FixtureSource, ctx: &mut GeneratorContext) -> EntitySource {
+fn map_source(source: FixtureSource, ctx: &mut BuilderContext) -> EntitySource {
     EntitySource {
         id: ctx.sources.intern(&source.provider),
 
@@ -16,7 +16,7 @@ fn map_source(source: FixtureSource, ctx: &mut GeneratorContext) -> EntitySource
     }
 }
 
-pub fn map(entity: FixtureEntity, ctx: &mut GeneratorContext) -> EntityDocument {
+pub fn map(entity: FixtureEntity, ctx: &mut BuilderContext) -> EntityDocument {
     EntityDocument {
         id: entity.id,
         entity_type: entity.entity_type,

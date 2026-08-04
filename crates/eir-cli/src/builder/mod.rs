@@ -5,4 +5,4 @@ pub mod mapper;
 pub mod pipeline;
 pub mod writer;
 
-pub use context::GeneratorContext;
+pub use context::BuilderContext;

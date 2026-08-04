@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
-use crate::generator;
+use crate::builder;
 
 pub fn execute(input: PathBuf, output: PathBuf) -> anyhow::Result<()> {
-    generator::pipeline::generate(input, output)
+    builder::pipeline::build(input, output)
 }

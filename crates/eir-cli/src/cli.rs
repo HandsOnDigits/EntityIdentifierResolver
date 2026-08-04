@@ -1,5 +1,7 @@
 use clap::{Parser, Subcommand, ValueEnum};
 
+use std::path::PathBuf;
+
 #[derive(Parser, Debug)]
 #[command(name = "eir", version, about = "Entity Identifier Resolver")]
 pub struct Cli {
@@ -9,6 +11,17 @@ pub struct Cli {
 
 #[derive(Subcommand, Debug)]
 pub enum Commands {
+    /// Build datasets
+    Build {
+        /// Input dataset
+        #[arg(short, long)]
+        input: PathBuf,
+
+        /// Output database
+        #[arg(short, long)]
+        output: PathBuf,
+    },
+
     /// Build or manage indexes
     Index {
         #[command(subcommand)]
@@ -17,9 +30,6 @@ pub enum Commands {
 
     /// Search entities
     Search { query: String },
-
-    /// Generate datasets
-    Generate { amount: usize },
 
     /// Generate shell completions
     Completions { shell: Shell },

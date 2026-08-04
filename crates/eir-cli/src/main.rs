@@ -1,7 +1,7 @@
+mod builder;
 mod cli;
 mod commands;
 mod debug;
-mod generator;
 
 use clap::CommandFactory;
 
@@ -13,42 +13,35 @@ use clap_complete::{
 
 use cli::{Cli, Commands, Shell};
 
+fn generate_completions(shell: Shell) -> std::io::Result<()> {
+    let mut cmd = Cli::command();
+    let mut stdout = std::io::stdout();
+
+    match shell {
+        Shell::Bash => generate(Bash, &mut cmd, "eir", &mut stdout),
+        Shell::Zsh => generate(Zsh, &mut cmd, "eir", &mut stdout),
+        Shell::Fish => generate(Fish, &mut cmd, "eir", &mut stdout),
+        Shell::PowerShell => generate(PowerShell, &mut cmd, "eir", &mut stdout),
+        Shell::Elvish => generate(Elvish, &mut cmd, "eir", &mut stdout),
+    }
+
+    Ok(())
+}
+
 fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
         Commands::Completions { shell } => {
-            let mut cmd = Cli::command();
-
-            match shell {
-                Shell::Bash => {
-                    generate(Bash, &mut cmd, "eir", &mut std::io::stdout());
-                }
-
-                Shell::Zsh => {
-                    generate(Zsh, &mut cmd, "eir", &mut std::io::stdout());
-                }
-
-                Shell::Fish => {
-                    generate(Fish, &mut cmd, "eir", &mut std::io::stdout());
-                }
-
-                Shell::PowerShell => {
-                    generate(PowerShell, &mut cmd, "eir", &mut std::io::stdout());
-                }
-
-                Shell::Elvish => {
-                    generate(Elvish, &mut cmd, "eir", &mut std::io::stdout());
-                }
-            }
+            generate_completions(shell)?;
         }
 
         Commands::Search { query } => {
             println!("Search: {}", query);
         }
 
-        Commands::Generate { amount } => {
-            println!("Generate {} entities", amount);
+        Commands::Build { input, output } => {
+            commands::build::execute(input, output)?;
         }
 
         Commands::Index { command } => {

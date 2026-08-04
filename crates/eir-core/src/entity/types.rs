@@ -11,6 +11,7 @@ pub struct Tag {
 }
 
 pub type SourceID = u32;
+
 #[derive(Archive, Serialize, Deserialize, PartialEq, Clone, Debug)]
 pub struct Source {
     pub id: SourceID,

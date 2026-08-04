@@ -2,146 +2,145 @@
   {
     "id": 1000,
     "entity_type": "company",
-    "name": "Aurora Foods",
-    "aliases": ["Aurora"],
+    "names": ["Aurora Foods", "Aurora"],
     "tags": ["food", "manufacturer"],
     "properties": [],
-    "relationships": []
+    "relationships": [],
+    "sources": []
   },
   {
     "id": 1001,
     "entity_type": "company",
-    "name": "Golden Harvest Group",
-    "aliases": ["Golden Harvest"],
+    "names": ["Golden Harvest Group", "Golden Harvest"],
     "tags": ["food", "manufacturer"],
     "properties": [],
-    "relationships": []
+    "relationships": [],
+    "sources": []
   },
   {
     "id": 1002,
     "entity_type": "company",
-    "name": "PureSpring Ltd",
-    "aliases": ["PureSpring"],
+    "names": ["PureSpring Ltd", "PureSpring"],
     "tags": ["water", "manufacturer"],
     "properties": [],
-    "relationships": []
+    "relationships": [],
+    "sources": []
   },
   {
     "id": 1003,
     "entity_type": "company",
-    "name": "Moon Foods",
-    "aliases": ["Moon"],
+    "names": ["Moon Foods", "Moon"],
     "tags": ["plant", "manufacturer"],
     "properties": [],
-    "relationships": []
+    "relationships": [],
+    "sources": []
   },
   {
     "id": 1004,
     "entity_type": "company",
-    "name": "FrostPeak Industries",
-    "aliases": ["FrostPeak"],
+    "names": ["FrostPeak Industries", "FrostPeak"],
     "tags": ["frozen", "manufacturer"],
     "properties": [],
-    "relationships": []
+    "relationships": [],
+    "sources": []
   },
 
   {
     "id": 2000,
     "entity_type": "category",
-    "name": "Drink",
-    "aliases": ["Beverage"],
+    "names": ["Drink", "Beverage"],
     "tags": ["food", "liquid"],
     "properties": [],
-    "relationships": []
+    "relationships": [],
+    "sources": []
   },
   {
     "id": 2001,
     "entity_type": "category",
-    "name": "Snack",
-    "aliases": ["Snack Food"],
+    "names": ["Snack", "Snack Food"],
     "tags": ["food", "small-meal"],
     "properties": [],
-    "relationships": []
+    "relationships": [],
+    "sources": []
   },
   {
     "id": 2002,
     "entity_type": "category",
-    "name": "Bakery",
-    "aliases": ["Bread"],
+    "names": ["Bakery", "Bread"],
     "tags": ["food", "bakery"],
     "properties": [],
-    "relationships": []
+    "relationships": [],
+    "sources": []
   },
   {
     "id": 2003,
     "entity_type": "category",
-    "name": "Frozen Food",
-    "aliases": ["Frozen"],
+    "names": ["Frozen Food", "Frozen"],
     "tags": ["food", "cold-storage"],
     "properties": [],
-    "relationships": []
+    "relationships": [],
+    "sources": []
   },
   {
     "id": 2004,
     "entity_type": "category",
-    "name": "Plant Based",
-    "aliases": ["Vegan"],
+    "names": ["Plant Based", "Vegan"],
     "tags": ["food", "plant"],
     "properties": [],
-    "relationships": []
+    "relationships": [],
+    "sources": []
   },
 
   {
     "id": 3000,
     "entity_type": "country",
-    "name": "Denmark",
-    "aliases": ["DK"],
+    "names": ["Denmark", "DK"],
     "tags": ["country", "europe"],
     "properties": [],
-    "relationships": []
+    "relationships": [],
+    "sources": []
   },
   {
     "id": 3001,
     "entity_type": "country",
-    "name": "Sweden",
-    "aliases": ["SE"],
+    "names": ["Sweden", "SE"],
     "tags": ["country", "europe"],
     "properties": [],
-    "relationships": []
+    "relationships": [],
+    "sources": []
   },
   {
     "id": 3002,
     "entity_type": "country",
-    "name": "Norway",
-    "aliases": ["NO"],
+    "names": ["Norway", "NO"],
     "tags": ["country", "europe"],
     "properties": [],
-    "relationships": []
+    "relationships": [],
+    "sources": []
   },
   {
     "id": 3003,
     "entity_type": "country",
-    "name": "Finland",
-    "aliases": ["FI"],
+    "names": ["Finland", "FI"],
     "tags": ["country", "europe"],
     "properties": [],
-    "relationships": []
+    "relationships": [],
+    "sources": []
   },
   {
     "id": 3004,
     "entity_type": "country",
-    "name": "Germany",
-    "aliases": ["DE"],
+    "names": ["Germany", "DE"],
     "tags": ["country", "europe"],
     "properties": [],
-    "relationships": []
+    "relationships": [],
+    "sources": []
   },
 
   {
     "id": 1,
     "entity_type": "food",
-    "name": "FizzBerry Spark",
-    "aliases": ["Berry Spark", "FizzBerry"],
+    "names": ["FizzBerry Spark", "Berry Spark", "FizzBerry"],
     "tags": ["sparkling", "berry", "drink", "sweet"],
     "properties": [
       {
@@ -156,19 +155,20 @@
       },
       {
         "target": 2000,
-        "kind": "is_a"
+        "kind": "category"
       },
       {
         "target": 3000,
-        "kind": "located_in"
+        "kind": "country"
       }
-    ]
+    ],
+    "sources": []
   },
+
   {
     "id": 2,
     "entity_type": "food",
-    "name": "Golden Grain Crunch",
-    "aliases": ["Grain Crunch", "Golden Cereal"],
+    "names": ["Golden Grain Crunch", "Grain Crunch", "Golden Cereal"],
     "tags": ["crunchy", "grain", "snack"],
     "properties": [],
     "relationships": [
@@ -178,19 +178,20 @@
       },
       {
         "target": 2001,
-        "kind": "is_a"
+        "kind": "category"
       },
       {
         "target": 3001,
-        "kind": "located_in"
+        "kind": "country"
       }
-    ]
+    ],
+    "sources": []
   },
+
   {
     "id": 3,
     "entity_type": "food",
-    "name": "Crystal Spring Water",
-    "aliases": ["Crystal Water", "Spring Water"],
+    "names": ["Crystal Spring Water", "Crystal Water", "Spring Water"],
     "tags": ["water", "still", "drink"],
     "properties": [],
     "relationships": [
@@ -200,19 +201,20 @@
       },
       {
         "target": 2000,
-        "kind": "is_a"
+        "kind": "category"
       },
       {
         "target": 3002,
-        "kind": "located_in"
+        "kind": "country"
       }
-    ]
+    ],
+    "sources": []
   },
+
   {
     "id": 4,
     "entity_type": "food",
-    "name": "Moonlight Oat Blend",
-    "aliases": ["Oat Blend"],
+    "names": ["Moonlight Oat Blend", "Oat Blend"],
     "tags": ["oat", "plant", "drink"],
     "properties": [],
     "relationships": [
@@ -222,19 +224,20 @@
       },
       {
         "target": 2004,
-        "kind": "is_a"
+        "kind": "category"
       },
       {
         "target": 3003,
-        "kind": "located_in"
+        "kind": "country"
       }
-    ]
+    ],
+    "sources": []
   },
+
   {
     "id": 5,
     "entity_type": "food",
-    "name": "FrostPeak Pizza Bites",
-    "aliases": ["Pizza Bites"],
+    "names": ["FrostPeak Pizza Bites", "Pizza Bites"],
     "tags": ["pizza", "frozen", "snack"],
     "properties": [],
     "relationships": [
@@ -244,12 +247,13 @@
       },
       {
         "target": 2003,
-        "kind": "is_a"
+        "kind": "category"
       },
       {
         "target": 3004,
-        "kind": "located_in"
+        "kind": "country"
       }
-    ]
+    ],
+    "sources": []
   }
 ]

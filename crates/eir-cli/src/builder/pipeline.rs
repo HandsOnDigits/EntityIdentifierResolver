@@ -3,13 +3,13 @@ use eir_core::{
     entity::types::{EntityID, TagID},
 };
 
-use super::{context::GeneratorContext, loader::load_entities, mapper, writer::write_database};
+use super::{context::BuilderContext, loader::load_entities, mapper, writer::write_database};
 
 use std::collections::HashMap;
 use std::path::Path;
 
-pub fn generate(input: impl AsRef<Path>, output: impl AsRef<Path>) -> anyhow::Result<()> {
-    let mut ctx = GeneratorContext::new();
+pub fn build(input: impl AsRef<Path>, output: impl AsRef<Path>) -> anyhow::Result<()> {
+    let mut ctx = BuilderContext::new();
 
     let fixtures = load_entities(input)?;
 
@@ -36,7 +36,7 @@ pub fn generate(input: impl AsRef<Path>, output: impl AsRef<Path>) -> anyhow::Re
         properties: ctx.properties.into_inner(),
     };
 
-    write_database(database)?;
+    write_database(database, output)?;
 
     Ok(())
 }
