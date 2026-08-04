@@ -1,4 +1,4 @@
-use rkyv::{Archive, Deserialize, Serialize};
+use rkyv::{Archive, Deserialize, Serialize, bytecheck::CheckBytes};
 
 use std::{collections::HashMap, hash::Hash};
 
@@ -59,7 +59,7 @@ where
     }
 }
 
-#[derive(Archive, Serialize, Deserialize, Debug, Clone, Default)]
+#[derive(Archive, Serialize, Deserialize, Debug, Clone, Default, CheckBytes)]
 pub struct PostingListRecord<K> {
     pub index: Vec<(K, Vec<EntityID>)>,
 }
