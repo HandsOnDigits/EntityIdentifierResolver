@@ -37,9 +37,17 @@ pub enum Commands {
 
 #[derive(Subcommand, Debug)]
 pub enum IndexCommands {
-    Build { path: String },
+    Build {
+        #[arg(short, long)]
+        input: String,
 
-    Stats,
+        #[arg(short, long)]
+        output: String,
+    },
+
+    Stats {
+        path: String,
+    },
 }
 
 #[derive(Clone, ValueEnum, Debug)]
