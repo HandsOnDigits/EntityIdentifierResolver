@@ -47,6 +47,10 @@ fn main() -> anyhow::Result<()> {
             commands::stats::execute(input)?;
         }
 
+        Commands::Inspect(args) => {
+            commands::inspect::execute(args)?;
+        }
+
         Commands::Index { command } => match command {
             IndexCommands::Build { input, output } => {
                 commands::build::execute(input.into(), output.into())?;

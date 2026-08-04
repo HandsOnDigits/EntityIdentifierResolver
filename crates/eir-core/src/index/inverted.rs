@@ -1,3 +1,5 @@
+use bytecheck::CheckBytes;
+
 use rkyv::{Archive, Deserialize, Serialize};
 
 use std::collections::HashMap;
@@ -27,7 +29,7 @@ impl InvertedIndex {
     }
 }
 
-#[derive(Archive, Serialize, Deserialize, Debug, Clone, Default)]
+#[derive(Archive, Serialize, Deserialize, Debug, Clone, CheckBytes, Default)]
 pub struct InvertedIndexRecord {
     pub entries: HashMap<Box<str>, Vec<EntityID>>,
 }

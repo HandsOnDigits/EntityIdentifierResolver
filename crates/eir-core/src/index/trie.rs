@@ -1,3 +1,5 @@
+use bytecheck::CheckBytes;
+
 use rkyv::{Archive, Deserialize, Serialize};
 
 use std::collections::HashMap;
@@ -35,7 +37,7 @@ impl TrieIndex {
     }
 }
 
-#[derive(Archive, Serialize, Deserialize, Debug, Clone, Default)]
+#[derive(Archive, Serialize, Deserialize, Debug, Clone, CheckBytes, Default)]
 pub struct TrieIndexRecord {
     pub entries: Vec<(Box<str>, Vec<EntityID>)>,
 }

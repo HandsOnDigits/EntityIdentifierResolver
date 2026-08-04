@@ -59,7 +59,7 @@ where
     }
 }
 
-#[derive(Archive, Serialize, Deserialize, Debug, Clone, Default, CheckBytes)]
+#[derive(Archive, Serialize, Deserialize, CheckBytes, Debug, Clone, Default)]
 pub struct PostingListRecord<K> {
     pub index: Vec<(K, Vec<EntityID>)>,
 }

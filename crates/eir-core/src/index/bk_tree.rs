@@ -1,3 +1,5 @@
+use bytecheck::CheckBytes;
+
 use rkyv::{Archive, Deserialize, Serialize};
 
 use crate::entity::types::EntityID;
@@ -58,7 +60,7 @@ fn levenshtein(a: &str, b: &str) -> usize {
     prev[b.len()]
 }
 
-#[derive(Archive, Serialize, Deserialize, Debug, Clone, Default)]
+#[derive(Archive, Serialize, Deserialize, Debug, Clone, CheckBytes, Default)]
 pub struct BKTreeIndexRecord {
     pub entries: Vec<(Box<str>, Vec<EntityID>)>,
 }

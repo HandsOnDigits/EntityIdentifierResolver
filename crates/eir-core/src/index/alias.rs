@@ -1,3 +1,5 @@
+use bytecheck::CheckBytes;
+
 use rkyv::{Archive, Deserialize, Serialize};
 
 use std::collections::HashMap;
@@ -25,7 +27,7 @@ impl AliasIndex {
     }
 }
 
-#[derive(Archive, Serialize, Deserialize, Debug, Clone)]
+#[derive(Archive, Serialize, Deserialize, CheckBytes, Debug)]
 pub struct AliasIndexRecord {
     pub entries: HashMap<Box<str>, Vec<EntityID>>,
 }

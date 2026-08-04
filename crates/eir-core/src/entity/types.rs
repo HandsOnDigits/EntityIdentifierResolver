@@ -116,6 +116,21 @@ pub enum RelationshipType {
     ReplacedBy,
 }
 
+impl ArchivedRelationshipType {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::IsA => "IsA",
+            Self::InstanceOf => "InstanceOf",
+            Self::PartOf => "PartOf",
+            Self::MadeBy => "MadeBy",
+            Self::OwnedBy => "OwnedBy",
+            Self::LocatedIn => "LocatedIn",
+            Self::SimilarTo => "SimilarTo",
+            Self::ReplacedBy => "ReplacedBy",
+        }
+    }
+}
+
 #[derive(
     Archive, RkyvSerialize, RkyvDeserialize, Serialize, Deserialize, Debug, Clone, PartialEq, Eq,
 )]

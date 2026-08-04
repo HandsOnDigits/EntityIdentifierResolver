@@ -268,5 +268,86 @@
     "properties": [],
     "relationships": [{ "target": 1004, "kind": "MadeBy" }],
     "sources": [{ "provider": "Open Food Facts", "verified": true }]
+  },
+
+  {
+    "id": 2000,
+    "names": ["Drink", "Beverage"],
+    "tags": ["food", "liquid", "category"],
+    "properties": [],
+    "relationships": [],
+    "sources": []
+  },
+  {
+    "id": 2001,
+    "names": ["Snack", "Snack Food"],
+    "tags": ["food", "small-meal", "category"],
+    "properties": [],
+    "relationships": [],
+    "sources": []
+  },
+  {
+    "id": 2002,
+    "names": ["Bakery", "Bread"],
+    "tags": ["food", "bakery", "category"],
+    "properties": [],
+    "relationships": [],
+    "sources": []
+  },
+  {
+    "id": 2003,
+    "names": ["Frozen Food", "Frozen"],
+    "tags": ["food", "cold-storage", "category"],
+    "properties": [],
+    "relationships": [],
+    "sources": []
+  },
+  {
+    "id": 2004,
+    "names": ["Plant Based", "Vegan"],
+    "tags": ["food", "plant", "category"],
+    "properties": [],
+    "relationships": [],
+    "sources": []
+  },
+  {
+    "id": 3000,
+    "names": ["Denmark", "DK"],
+    "tags": ["country", "europe"],
+    "properties": [],
+    "relationships": [],
+    "sources": []
+  },
+  {
+    "id": 3001,
+    "names": ["Sweden", "SE"],
+    "tags": ["country", "europe"],
+    "properties": [],
+    "relationships": [],
+    "sources": []
+  },
+  {
+    "id": 3002,
+    "names": ["Norway", "NO"],
+    "tags": ["country", "europe"],
+    "properties": [],
+    "relationships": [],
+    "sources": []
+  },
+  {
+    "id": 3003,
+    "names": ["Finland", "FI"],
+    "tags": ["country", "europe"],
+    "properties": [],
+    "relationships": [],
+    "sources": []
+  },
+  {
+    "id": 3004,
+    "names": ["Germany", "DE"],
+    "tags": ["country", "europe"],
+    "properties": [],
+    "relationships": [],
+    "sources": []
   }
 ]

@@ -1,5 +1,7 @@
 use clap::{Parser, Subcommand, ValueEnum};
 
+use crate::commands::inspect::InspectArgs;
+
 use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
@@ -22,9 +24,11 @@ pub enum Commands {
         output: PathBuf,
     },
 
-    Stats {
-        input: PathBuf,
-    },
+    /// Show database statistics
+    Stats { input: PathBuf },
+
+    /// Inspect an entity in the database
+    Inspect(InspectArgs),
 
     /// Build or manage indexes
     Index {
@@ -33,14 +37,10 @@ pub enum Commands {
     },
 
     /// Search entities
-    Search {
-        query: String,
-    },
+    Search { query: String },
 
     /// Generate shell completions
-    Completions {
-        shell: Shell,
-    },
+    Completions { shell: Shell },
 }
 
 #[derive(Subcommand, Debug)]
