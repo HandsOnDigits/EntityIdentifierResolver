@@ -1,4 +1,4 @@
-# Entity-Identifier-Resolver
+# Entity-Identifier-Resolver (EIR)
 
 # ⚠️Warning⚠️
 This is *NOT* encrypted.
