@@ -12,16 +12,13 @@ pub struct EntitySource {
 
     pub verified: bool,
 
-    pub created: Date,
-
-    pub updated: Date,
+    pub created: Option<Date>,
+    pub updated: Option<Date>,
 }
 
 #[derive(Archive, Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Entity {
     pub id: EntityID,
-
-    pub entity_type: EntityType,
 
     pub names: Vec<EntityName>,
 
@@ -38,13 +35,13 @@ pub struct Entity {
 pub struct EntityDocument {
     pub id: EntityID,
 
-    pub entity_type: EntityType,
-
     pub aliases: Vec<EntityName>,
 
     pub tags: Vec<TagID>,
 
     pub properties: Vec<PropertyID>,
+
+    pub relationships: Vec<Relationship>,
 
     pub sources: Vec<SourceID>,
 }

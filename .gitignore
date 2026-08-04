@@ -27,4 +27,4 @@ target
 
 # Exclute raw database files
 *.bin
-output
+*.eir

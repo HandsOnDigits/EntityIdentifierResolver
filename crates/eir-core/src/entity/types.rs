@@ -1,10 +1,13 @@
-use rkyv::{Archive, Deserialize, Serialize};
+use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
+use serde::{Deserialize, Serialize}; // Bring serde traits into scope
 
 pub type EntityID = u64;
 
 pub type TagID = u32;
 
-#[derive(Archive, Serialize, Deserialize, PartialEq, Clone, Debug)]
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, Serialize, Deserialize, PartialEq, Clone, Debug,
+)]
 pub struct Tag {
     pub id: TagID,
     pub name: String,
@@ -12,17 +15,29 @@ pub struct Tag {
 
 pub type SourceID = u32;
 
-#[derive(Archive, Serialize, Deserialize, PartialEq, Clone, Debug)]
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, Serialize, Deserialize, PartialEq, Clone, Debug,
+)]
 pub struct Source {
     pub id: SourceID,
     pub name: String,
 }
 
-pub type EntityType = [u8; 4];
-
 pub type EntityName = Box<str>;
 
-#[derive(Archive, Clone, Copy, PartialEq, Eq, Hash, Debug, Serialize, Deserialize)]
+#[derive(
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+    Serialize,
+    Deserialize,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    Debug,
+)]
 pub struct Date(pub i64);
 
 impl Date {
@@ -47,13 +62,17 @@ pub type Alias = Box<str>;
 
 pub type PropertyID = u32;
 
-#[derive(Archive, Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, Serialize, Deserialize, Debug, Clone, PartialEq,
+)]
 pub struct Property {
     pub key: PropertyID,
     pub value: Value,
 }
 
-#[derive(Archive, Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, Serialize, Deserialize, Debug, Clone, PartialEq,
+)]
 pub enum Value {
     String(String),
     Integer(i64),
@@ -74,7 +93,18 @@ impl From<std::io::Error> for EntityError {
     }
 }
 
-#[derive(Archive, Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+    Serialize,
+    Deserialize,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+)]
 pub enum RelationshipType {
     IsA,
     InstanceOf,
@@ -86,7 +116,9 @@ pub enum RelationshipType {
     ReplacedBy,
 }
 
-#[derive(Archive, Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, Serialize, Deserialize, Debug, Clone, PartialEq, Eq,
+)]
 pub struct Relationship {
     pub target: EntityID,
     pub kind: RelationshipType,

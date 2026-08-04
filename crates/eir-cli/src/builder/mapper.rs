@@ -19,7 +19,6 @@ fn map_source(source: FixtureSource, ctx: &mut BuilderContext) -> EntitySource {
 pub fn map(entity: FixtureEntity, ctx: &mut BuilderContext) -> EntityDocument {
     EntityDocument {
         id: entity.id,
-        entity_type: entity.entity_type,
 
         aliases: entity.names,
 
@@ -32,8 +31,10 @@ pub fn map(entity: FixtureEntity, ctx: &mut BuilderContext) -> EntityDocument {
         properties: entity
             .properties
             .into_iter()
-            .map(|property| ctx.properties.intern(&property))
+            .map(|property| ctx.properties.intern(&property.key))
             .collect(),
+
+        relationships: entity.relationships,
 
         sources: entity
             .sources

@@ -61,5 +61,5 @@ where
 
 #[derive(Archive, Serialize, Deserialize, Debug, Clone, Default)]
 pub struct PostingListRecord<K> {
-    pub index: HashMap<K, Vec<EntityID>>,
+    pub index: Vec<(K, Vec<EntityID>)>,
 }

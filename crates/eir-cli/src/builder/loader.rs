@@ -1,13 +1,11 @@
-use rkyv::{access, deserialize, rancor::Error};
+use std::fs::File;
+use std::path::Path;
 
 use super::fixture::FixtureEntity;
 
-pub fn load_entities(path: impl AsRef<std::path::Path>) -> anyhow::Result<Vec<FixtureEntity>> {
-    let bytes = std::fs::read(path)?;
-
-    let archived = access::<rkyv::Archived<Vec<FixtureEntity>>, Error>(&bytes)?;
-
-    let entities: Vec<FixtureEntity> = deserialize::<Vec<FixtureEntity>, Error>(archived)?;
+pub fn load_entities(path: impl AsRef<Path>) -> anyhow::Result<Vec<FixtureEntity>> {
+    let file = File::open(path)?;
+    let entities: Vec<FixtureEntity> = serde_json::from_reader(file)?;
 
     Ok(entities)
 }

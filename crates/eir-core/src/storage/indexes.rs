@@ -7,13 +7,13 @@ use crate::entity::{
 
 use super::posting_list::{PostingList, PostingListRecord};
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct Indexes {
     pub tags: PostingList<TagID>,
     pub sources: PostingList<SourceID>,
 }
 
-#[derive(Archive, Serialize, Deserialize)]
+#[derive(Archive, Serialize, Deserialize, Debug)]
 pub struct ArchivedIndexes {
     pub tags: PostingListRecord<TagID>,
     pub sources: PostingListRecord<SourceID>,

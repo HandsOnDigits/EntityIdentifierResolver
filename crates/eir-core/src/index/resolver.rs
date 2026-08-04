@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::{
     entity::EntityDocument,
     entity::types::{EntityID, PropertyID, SourceID, TagID},
-    storage::posting_list::PostingList,
+    storage::PostingList,
 };
 
 use super::{

@@ -1,29 +1,36 @@
-use rkyv::{Archive, Deserialize, Serialize};
+use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
+use serde::{Deserialize, Serialize};
 
 use eir_core::prelude::*;
 
-#[derive(Archive, Serialize, Deserialize, Debug, Clone)]
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, Serialize, Deserialize, Debug, Clone)]
+pub struct FixtureProperty {
+    pub key: String,
+    pub value: String,
+}
+
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, Serialize, Deserialize, Debug, Clone)]
 pub struct FixtureEntity {
     pub id: EntityID,
 
-    pub entity_type: [u8; 4],
-
-    pub names: Vec<Box<str>>,
+    pub names: Vec<EntityName>,
 
     pub tags: Vec<Box<str>>,
 
-    pub properties: Vec<Box<str>>,
+    pub properties: Vec<FixtureProperty>,
+
+    pub relationships: Vec<Relationship>,
 
     pub sources: Vec<FixtureSource>,
 }
 
-#[derive(Archive, Serialize, Deserialize, Debug, Clone)]
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, Serialize, Deserialize, Debug, Clone)]
 pub struct FixtureSource {
     pub provider: Box<str>,
 
     pub verified: bool,
 
-    pub created: Date,
+    pub created: Option<Date>,
 
-    pub updated: Date,
+    pub updated: Option<Date>,
 }

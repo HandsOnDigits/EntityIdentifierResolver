@@ -1,14 +1,13 @@
-use eir_core::{
-    Database,
-    entity::types::{EntityID, TagID},
-};
+use std::collections::HashMap;
+
+use eir_core::{Database, storage::IndexBuilder};
 
 use super::{context::BuilderContext, loader::load_entities, mapper, writer::write_database};
 
-use std::collections::HashMap;
-use std::path::Path;
-
-pub fn build(input: impl AsRef<Path>, output: impl AsRef<Path>) -> anyhow::Result<()> {
+pub fn build(
+    input: impl AsRef<std::path::Path>,
+    output: impl AsRef<std::path::Path>,
+) -> anyhow::Result<()> {
     let mut ctx = BuilderContext::new();
 
     let fixtures = load_entities(input)?;
@@ -18,22 +17,25 @@ pub fn build(input: impl AsRef<Path>, output: impl AsRef<Path>) -> anyhow::Resul
         .map(|entity| mapper::map(entity, &mut ctx))
         .collect::<Vec<_>>();
 
-    let mut entities = Vec::new();
-    let mut tags: HashMap<TagID, Vec<EntityID>> = HashMap::new();
+    let mut entities = Vec::with_capacity(inputs.len());
+    let mut aliases = HashMap::new();
 
-    for input in inputs {
-        entities.push(input.clone());
+    for entity in &inputs {
+        entities.push(entity.clone());
 
-        for tag in &input.tags {
-            tags.entry(*tag).or_default().push(input.id);
-        }
+        aliases.insert(entity.id, entity.clone());
     }
+
+    let indexes = IndexBuilder::build(&inputs);
 
     let database = Database {
         entities,
         tags: ctx.tags.into_inner(),
         sources: ctx.sources.into_inner(),
         properties: ctx.properties.into_inner(),
+
+        tag_index: indexes.tags.to_archive(),
+        source_index: indexes.sources.to_archive(),
     };
 
     write_database(database, output)?;

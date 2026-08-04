@@ -1,147 +1,103 @@
 [
   {
-    "id": 1000,
-    "entity_type": "company",
-    "names": ["Aurora Foods", "Aurora"],
-    "tags": ["food", "manufacturer"],
+    "id": 9000,
+    "names": ["Open Food Facts"],
+    "tags": ["source", "database"],
     "properties": [],
     "relationships": [],
     "sources": []
   },
+  {
+    "id": 9001,
+    "names": ["Manufacturer Registry"],
+    "tags": ["source", "registry"],
+    "properties": [],
+    "relationships": [],
+    "sources": []
+  },
+  {
+    "id": 9002,
+    "names": ["Country Registry"],
+    "tags": ["source", "registry"],
+    "properties": [],
+    "relationships": [],
+    "sources": []
+  },
+
+  {
+    "id": 1000,
+    "names": ["Aurora Foods", "Aurora"],
+    "tags": ["food", "manufacturer", "company"],
+    "properties": [],
+    "relationships": [],
+    "sources": [
+      {
+        "provider": "Manufacturer Registry",
+        "verified": true
+      }
+    ]
+  },
+
   {
     "id": 1001,
-    "entity_type": "company",
     "names": ["Golden Harvest Group", "Golden Harvest"],
-    "tags": ["food", "manufacturer"],
+    "tags": ["food", "manufacturer", "company"],
     "properties": [],
     "relationships": [],
-    "sources": []
+    "sources": [
+      {
+        "provider": "Manufacturer Registry",
+        "verified": true
+      }
+    ]
   },
+
   {
     "id": 1002,
-    "entity_type": "company",
     "names": ["PureSpring Ltd", "PureSpring"],
-    "tags": ["water", "manufacturer"],
+    "tags": ["water", "manufacturer", "company"],
     "properties": [],
     "relationships": [],
-    "sources": []
+    "sources": [
+      {
+        "provider": "Manufacturer Registry",
+        "verified": true
+      }
+    ]
   },
+
   {
     "id": 1003,
-    "entity_type": "company",
     "names": ["Moon Foods", "Moon"],
-    "tags": ["plant", "manufacturer"],
+    "tags": ["plant", "manufacturer", "company"],
     "properties": [],
     "relationships": [],
-    "sources": []
+    "sources": [
+      {
+        "provider": "Manufacturer Registry",
+        "verified": true
+      }
+    ]
   },
+
   {
     "id": 1004,
-    "entity_type": "company",
     "names": ["FrostPeak Industries", "FrostPeak"],
-    "tags": ["frozen", "manufacturer"],
+    "tags": ["frozen", "manufacturer", "company"],
     "properties": [],
     "relationships": [],
-    "sources": []
-  },
-
-  {
-    "id": 2000,
-    "entity_type": "category",
-    "names": ["Drink", "Beverage"],
-    "tags": ["food", "liquid"],
-    "properties": [],
-    "relationships": [],
-    "sources": []
-  },
-  {
-    "id": 2001,
-    "entity_type": "category",
-    "names": ["Snack", "Snack Food"],
-    "tags": ["food", "small-meal"],
-    "properties": [],
-    "relationships": [],
-    "sources": []
-  },
-  {
-    "id": 2002,
-    "entity_type": "category",
-    "names": ["Bakery", "Bread"],
-    "tags": ["food", "bakery"],
-    "properties": [],
-    "relationships": [],
-    "sources": []
-  },
-  {
-    "id": 2003,
-    "entity_type": "category",
-    "names": ["Frozen Food", "Frozen"],
-    "tags": ["food", "cold-storage"],
-    "properties": [],
-    "relationships": [],
-    "sources": []
-  },
-  {
-    "id": 2004,
-    "entity_type": "category",
-    "names": ["Plant Based", "Vegan"],
-    "tags": ["food", "plant"],
-    "properties": [],
-    "relationships": [],
-    "sources": []
-  },
-
-  {
-    "id": 3000,
-    "entity_type": "country",
-    "names": ["Denmark", "DK"],
-    "tags": ["country", "europe"],
-    "properties": [],
-    "relationships": [],
-    "sources": []
-  },
-  {
-    "id": 3001,
-    "entity_type": "country",
-    "names": ["Sweden", "SE"],
-    "tags": ["country", "europe"],
-    "properties": [],
-    "relationships": [],
-    "sources": []
-  },
-  {
-    "id": 3002,
-    "entity_type": "country",
-    "names": ["Norway", "NO"],
-    "tags": ["country", "europe"],
-    "properties": [],
-    "relationships": [],
-    "sources": []
-  },
-  {
-    "id": 3003,
-    "entity_type": "country",
-    "names": ["Finland", "FI"],
-    "tags": ["country", "europe"],
-    "properties": [],
-    "relationships": [],
-    "sources": []
-  },
-  {
-    "id": 3004,
-    "entity_type": "country",
-    "names": ["Germany", "DE"],
-    "tags": ["country", "europe"],
-    "properties": [],
-    "relationships": [],
-    "sources": []
+    "sources": [
+      {
+        "provider": "Manufacturer Registry",
+        "verified": true
+      }
+    ]
   },
 
   {
     "id": 1,
-    "entity_type": "food",
     "names": ["FizzBerry Spark", "Berry Spark", "FizzBerry"],
-    "tags": ["sparkling", "berry", "drink", "sweet"],
+    "tags": ["sparkling", "berry", "drink", "sweet", "food"],
     "properties": [
       {
         "key": "volume",
@@ -151,109 +107,76 @@
     "relationships": [
       {
         "target": 1000,
-        "kind": "made_by"
+        "kind": "MadeBy"
       },
       {
         "target": 2000,
-        "kind": "category"
+        "kind": "InstanceOf"
       },
       {
         "target": 3000,
-        "kind": "country"
+        "kind": "LocatedIn"
       }
     ],
-    "sources": []
+    "sources": [
+      {
+        "provider": "Open Food Facts",
+        "verified": true
+      }
+    ]
   },
 
   {
     "id": 2,
-    "entity_type": "food",
     "names": ["Golden Grain Crunch", "Grain Crunch", "Golden Cereal"],
-    "tags": ["crunchy", "grain", "snack"],
+    "tags": ["crunchy", "grain", "snack", "food"],
     "properties": [],
     "relationships": [
       {
         "target": 1001,
-        "kind": "made_by"
+        "kind": "MadeBy"
       },
       {
         "target": 2001,
-        "kind": "category"
+        "kind": "InstanceOf"
       },
       {
         "target": 3001,
-        "kind": "country"
+        "kind": "LocatedIn"
       }
     ],
-    "sources": []
+    "sources": [
+      {
+        "provider": "Open Food Facts",
+        "verified": true
+      }
+    ]
   },
 
   {
     "id": 3,
-    "entity_type": "food",
     "names": ["Crystal Spring Water", "Crystal Water", "Spring Water"],
-    "tags": ["water", "still", "drink"],
+    "tags": ["water", "still", "drink", "food"],
     "properties": [],
     "relationships": [
       {
         "target": 1002,
-        "kind": "made_by"
+        "kind": "MadeBy"
       },
       {
         "target": 2000,
-        "kind": "category"
+        "kind": "InstanceOf"
       },
       {
         "target": 3002,
-        "kind": "country"
+        "kind": "LocatedIn"
       }
     ],
-    "sources": []
-  },
-
-  {
-    "id": 4,
-    "entity_type": "food",
-    "names": ["Moonlight Oat Blend", "Oat Blend"],
-    "tags": ["oat", "plant", "drink"],
-    "properties": [],
-    "relationships": [
+    "sources": [
       {
-        "target": 1003,
-        "kind": "made_by"
-      },
-      {
-        "target": 2004,
-        "kind": "category"
-      },
-      {
-        "target": 3003,
-        "kind": "country"
+        "provider": "Open Food Facts",
+        "verified": true
       }
-    ],
-    "sources": []
-  },
-
-  {
-    "id": 5,
-    "entity_type": "food",
-    "names": ["FrostPeak Pizza Bites", "Pizza Bites"],
-    "tags": ["pizza", "frozen", "snack"],
-    "properties": [],
-    "relationships": [
-      {
-        "target": 1004,
-        "kind": "made_by"
-      },
-      {
-        "target": 2003,
-        "kind": "category"
-      },
-      {
-        "target": 3004,
-        "kind": "country"
-      }
-    ],
-    "sources": []
+    ]
   }
 ]
