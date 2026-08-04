@@ -33,7 +33,7 @@ where
         Self { index }
     }
 
-    pub fn to_archive(&self) -> PostingListRecord<K> {
+    pub fn to_record(&self) -> PostingListRecord<K> {
         let index = self
             .index
             .iter()
