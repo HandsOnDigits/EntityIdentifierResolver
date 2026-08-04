@@ -43,6 +43,10 @@ fn main() -> anyhow::Result<()> {
             commands::build::execute(input, output)?;
         }
 
+        Commands::Stats { input } => {
+            commands::stats::execute(input)?;
+        }
+
         Commands::Index { command } => match command {
             IndexCommands::Build { input, output } => {
                 commands::build::execute(input.into(), output.into())?;
