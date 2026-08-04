@@ -9,18 +9,22 @@ pub fn execute(path: std::path::PathBuf) -> anyhow::Result<()> {
     let database: &ArchivedDatabase = access::<ArchivedDatabase, Error>(&bytes)?;
 
     println!("Database Statistics");
+    println!("===================");
     println!();
-
     println!("Entities:    {}", database.entities.len());
     println!("Tags:        {}", database.tags.len());
     println!("Sources:     {}", database.sources.len());
     println!("Properties:  {}", database.properties.len());
 
     println!();
-
-    println!("Indexes:");
-    println!("  Tags:      {}", database.tag_index.index.len());
-    println!("  Sources:   {}", database.source_index.index.len());
+    println!("Indexes");
+    println!("-------");
+    println!("Aliases:     {}", database.alias_index.entries.len());
+    println!("Trie:        {}", database.trie_index.entries.len());
+    println!("BK-Tree:     {}", database.bk_tree_index.entries.len());
+    println!("Tokens:      {}", database.inverted_index.entries.len());
+    println!("Tags:        {}", database.tag_index.index.len());
+    println!("Sources:     {}", database.source_index.index.len());
 
     Ok(())
 }
