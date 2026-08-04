@@ -5,10 +5,17 @@ use crate::entity::{
     types::{SourceID, TagID},
 };
 
+use crate::index::{prelude::*, utils::normalize};
+
 use super::posting_list::{PostingList, PostingListRecord};
 
 #[derive(Default, Debug)]
 pub struct Indexes {
+    pub alias: AliasIndex,
+    pub trie: TrieIndex,
+    pub bk_tree: BKTreeIndex,
+    pub inverted: InvertedIndex,
+
     pub tags: PostingList<TagID>,
     pub sources: PostingList<SourceID>,
 }
@@ -23,21 +30,32 @@ pub struct IndexBuilder;
 
 impl IndexBuilder {
     pub fn build(inputs: &[EntityDocument]) -> Indexes {
-        let mut tags = PostingList::<TagID>::default();
-        let mut sources = PostingList::<SourceID>::default();
+        let mut indexes = Indexes::default();
 
-        for input in inputs {
-            let entity_id = input.id;
+        for entity in inputs {
+            let id = entity.id;
 
-            for tag in &input.tags {
-                tags.insert(*tag, entity_id);
+            for alias in &entity.aliases {
+                let normalized = normalize(alias);
+
+                indexes.alias.insert(normalized.clone(), id);
+                indexes.trie.insert(&normalized, id);
+                indexes.bk_tree.insert(&normalized, id);
+
+                for token in normalized.split_whitespace() {
+                    indexes.inverted.insert(token, id);
+                }
             }
 
-            for source in &input.sources {
-                sources.insert(*source, entity_id);
+            for tag in &entity.tags {
+                indexes.tags.insert(*tag, id);
+            }
+
+            for source in &entity.sources {
+                indexes.sources.insert(*source, id);
             }
         }
 
-        Indexes { tags, sources }
+        indexes
     }
 }
