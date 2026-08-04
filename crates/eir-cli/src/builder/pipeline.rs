@@ -30,11 +30,15 @@ pub fn build(
 
     let database = Database {
         entities,
-        aliases,
 
         tags: ctx.tags.into_inner(),
         sources: ctx.sources.into_inner(),
         properties: ctx.properties.into_inner(),
+
+        alias_index: indexes.alias.to_record(),
+        trie_index: indexes.trie.to_record(),
+        bk_tree_index: indexes.bk_tree.to_record(),
+        inverted_index: indexes.inverted.to_record(),
 
         tag_index: indexes.tags.to_record(),
         source_index: indexes.sources.to_record(),
