@@ -22,6 +22,10 @@ pub enum Commands {
         output: PathBuf,
     },
 
+    Stats {
+        input: PathBuf,
+    },
+
     /// Build or manage indexes
     Index {
         #[command(subcommand)]
@@ -29,10 +33,14 @@ pub enum Commands {
     },
 
     /// Search entities
-    Search { query: String },
+    Search {
+        query: String,
+    },
 
     /// Generate shell completions
-    Completions { shell: Shell },
+    Completions {
+        shell: Shell,
+    },
 }
 
 #[derive(Subcommand, Debug)]
