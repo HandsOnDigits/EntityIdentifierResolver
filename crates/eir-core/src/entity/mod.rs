@@ -2,7 +2,7 @@ pub mod types;
 
 use types::*;
 
-use rkyv::{Archive, Deserialize, Serialize};
+use rkyv::{Archive, Deserialize, Serialize, bytecheck::CheckBytes};
 
 #[derive(Archive, Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct EntitySource {
@@ -31,7 +31,7 @@ pub struct Entity {
     pub sources: Vec<EntitySource>,
 }
 
-#[derive(Archive, Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[derive(Archive, Serialize, Deserialize, Debug, PartialEq, Clone, CheckBytes)]
 pub struct EntityDocument {
     pub id: EntityID,
 
