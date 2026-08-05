@@ -19,9 +19,13 @@ pub enum SearchSource {
     PrefixAlias,
     FuzzyAlias,
     Token,
+
     Tag,
-    Attribute,
+
+    AttributeKey,
     AttributeValue,
+    AttributeKeyValue,
+
     Relationship,
     Source,
 }
@@ -53,11 +57,15 @@ pub enum SearchExplanation {
         tag: TagID,
     },
 
-    Attribute {
+    AttributeKey {
         term: Box<str>,
     },
 
     AttributeValue {
+        term: Box<str>,
+    },
+
+    AttributeKeyValue {
         key: Box<str>,
         value: Box<str>,
     },

@@ -31,7 +31,9 @@ pub fn build(
         bk_tree_index: indexes.bk_tree.to_record(),
         inverted_index: indexes.inverted.to_record(),
 
-        attribute_index: indexes.attributes.to_record(),
+        attribute_key_index: indexes.attribute_keys.to_record(),
+        attribute_value_index: indexes.attribute_values.to_record(),
+        attribute_pair_index: indexes.attribute_pairs.to_record(),
 
         tag_index: indexes.tags.to_record(),
         source_index: indexes.sources.to_record(),

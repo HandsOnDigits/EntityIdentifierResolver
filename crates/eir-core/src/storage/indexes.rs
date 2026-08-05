@@ -19,7 +19,10 @@ pub struct Indexes {
     pub tags: PostingList<TagID>,
     pub sources: PostingList<SourceID>,
 
-    pub attributes: InvertedIndex,
+    pub attribute_keys: InvertedIndex,
+    pub attribute_values: InvertedIndex,
+    pub attribute_pairs: InvertedIndex,
+
     pub relationships: PostingList<EntityID>,
 }
 
@@ -63,14 +66,19 @@ impl IndexBuilder {
                     continue;
                 };
 
+                let key = normalize(key);
                 let value = attribute.value.normalized();
 
-                indexes.attributes.insert(key, id);
-                indexes.attributes.insert(&value, id);
-                indexes.attributes.insert(&format!("{key}:{value}"), id);
+                indexes.attribute_keys.insert(&key, id);
+
+                indexes.attribute_values.insert(&value, id);
+
+                indexes
+                    .attribute_pairs
+                    .insert(&format!("{key}:{value}"), id);
 
                 for token in value.split_whitespace() {
-                    indexes.attributes.insert(token, id);
+                    indexes.attribute_values.insert(token, id);
                 }
             }
 

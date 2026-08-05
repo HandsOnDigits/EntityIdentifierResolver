@@ -33,7 +33,10 @@ pub struct Resolver {
 
     attribute_lookup: HashMap<Box<str>, AttributeKeyID>,
     attribute_names: Vec<Box<str>>,
-    attribute_index: InvertedIndex,
+
+    attribute_keys: InvertedIndex,
+    attribute_values: InvertedIndex,
+    attribute_pairs: InvertedIndex,
 
     tag_lookup: HashMap<Box<str>, TagID>,
     source_lookup: HashMap<Box<str>, SourceID>,
@@ -103,14 +106,14 @@ impl Resolver {
         let key = normalize(key);
         let value = normalize(value);
 
-        self.attribute_index.insert(&key, id);
+        self.attribute_keys.insert(&key, id);
 
-        self.attribute_index.insert(&value, id);
+        self.attribute_values.insert(&value, id);
 
-        self.attribute_index.insert(&format!("{key}:{value}"), id);
+        self.attribute_pairs.insert(&format!("{key}:{value}"), id);
 
         for token in value.split_whitespace() {
-            self.attribute_index.insert(token, id);
+            self.attribute_values.insert(token, id);
         }
     }
 
@@ -118,16 +121,6 @@ impl Resolver {
         let (key, value) = query.split_once(':')?;
 
         Some(AttributeQuery { key, value })
-    }
-
-    pub fn attribute_value_search(&self, key: &str, value: &str) -> Vec<EntityID> {
-        let query = format!("{}:{}", normalize(key), normalize(value));
-
-        self.attribute_index.lookup(&query)
-    }
-
-    pub fn attribute_search(&self, query: &str) -> Vec<EntityID> {
-        self.attribute_index.lookup(&normalize(query))
     }
 
     pub fn register_source(&mut self, id: SourceID, name: Box<str>) {
@@ -255,27 +248,41 @@ impl Resolver {
 
         // Attribute key:value search
         if let Some(attribute) = attribute {
-            for id in self.attribute_value_search(attribute.key, attribute.value) {
+            let key = normalize(attribute.key);
+            let value = normalize(attribute.value);
+
+            for id in self.attribute_pairs.lookup(&format!("{key}:{value}")) {
+                candidates.push((
+                    id,
+                    SearchSource::AttributeKeyValue,
+                    SearchExplanation::AttributeKeyValue {
+                        key: key.clone().into(),
+                        value: value.clone().into(),
+                    },
+                ));
+            }
+        } else {
+            // attribute key
+            for id in self.attribute_keys.lookup(&query) {
+                candidates.push((
+                    id,
+                    SearchSource::AttributeKey,
+                    SearchExplanation::AttributeKey {
+                        term: query.clone(),
+                    },
+                ));
+            }
+
+            // attribute value
+            for id in self.attribute_values.lookup(&query) {
                 candidates.push((
                     id,
                     SearchSource::AttributeValue,
                     SearchExplanation::AttributeValue {
-                        key: normalize(attribute.key),
-                        value: normalize(attribute.value),
+                        term: query.clone(),
                     },
                 ));
             }
-        }
-
-        // Generic attribute search
-        for id in self.attribute_search(&query) {
-            candidates.push((
-                id,
-                SearchSource::Attribute,
-                SearchExplanation::Attribute {
-                    term: query.clone(),
-                },
-            ));
         }
 
         if let Some(source_id) = self.source_search(&query) {
@@ -341,7 +348,11 @@ impl Resolver {
 
             attribute_names: database.attribute_keys.clone(),
 
-            attribute_index: InvertedIndex::from_record(database.attribute_index.clone()),
+            attribute_keys: InvertedIndex::from_record(database.attribute_key_index.clone()),
+
+            attribute_values: InvertedIndex::from_record(database.attribute_value_index.clone()),
+
+            attribute_pairs: InvertedIndex::from_record(database.attribute_pair_index.clone()),
 
             tag_lookup: database
                 .tags
@@ -379,7 +390,10 @@ impl Default for Resolver {
 
             attribute_lookup: HashMap::new(),
             attribute_names: Vec::new(),
-            attribute_index: InvertedIndex::default(),
+
+            attribute_keys: InvertedIndex::default(),
+            attribute_values: InvertedIndex::default(),
+            attribute_pairs: InvertedIndex::default(),
 
             tag_lookup: HashMap::new(),
             source_lookup: HashMap::new(),

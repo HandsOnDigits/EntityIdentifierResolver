@@ -25,8 +25,9 @@ impl Ranker {
 
             // metadata
             SearchSource::Tag => 0.25,
-            SearchSource::AttributeValue => 0.70,
-            SearchSource::Attribute => 0.30,
+            SearchSource::AttributeKey => 0.20,
+            SearchSource::AttributeValue => 0.50,
+            SearchSource::AttributeKeyValue => 0.85,
 
             // provenance
             SearchSource::Source => 0.45,
@@ -34,11 +35,6 @@ impl Ranker {
     }
 
     fn calculate_score(sources: &HashSet<SearchSource>) -> f32 {
-        // Exact match dominates.
-        if sources.contains(&SearchSource::ExactAlias) {
-            return 1.0;
-        }
-
         let base = sources
             .iter()
             .map(|source| Self::weight(*source))
@@ -51,7 +47,7 @@ impl Ranker {
             _ => 0.15,
         };
 
-        (base + bonus).min(0.95)
+        (base + bonus).min(1.0)
     }
 
     pub fn rank(
