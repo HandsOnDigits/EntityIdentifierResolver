@@ -1,6 +1,6 @@
 use clap::{Parser, Subcommand, ValueEnum};
 
-use crate::commands::inspect::InspectArgs;
+use crate::commands::{inspect::InspectArgs, search::SearchArgs};
 
 use std::path::PathBuf;
 
@@ -37,7 +37,7 @@ pub enum Commands {
     },
 
     /// Search entities
-    Search { query: String },
+    Search(SearchArgs),
 
     /// Generate shell completions
     Completions { shell: Shell },
