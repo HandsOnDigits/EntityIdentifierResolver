@@ -6,16 +6,22 @@ use eir_core::engine::load_database_owned;
 
 #[derive(Args, Debug)]
 pub struct SearchArgs {
+    /// Database file
     pub input: PathBuf,
+
+    /// Search query
     pub query: String,
 
+    /// Maximum results
     #[arg(short, long, default_value_t = 10)]
     pub limit: usize,
 }
 
 pub fn execute(args: SearchArgs) -> Result<()> {
     let database = load_database_owned(&args.input)?;
+
     let resolver = database.resolver();
+
     let results = resolver.search(&args.query);
 
     println!("Search: {}", args.query);
@@ -31,7 +37,7 @@ pub fn execute(args: SearchArgs) -> Result<()> {
 
         println!(
             "{}  score={:.2}  via={:?}",
-            name, result.score, result.source
+            name, result.score, result.sources
         );
     }
 
