@@ -19,9 +19,9 @@ build        Build an EIR database
 stats        Show database statistics
 inspect      Inspect an entity
 search       Search entities
-index        Manage indexes
-generate     Generate test datasets
-completions  Generate shell completions
+index        Manage indexes (Not implemented)
+generate     Generate test datasets (Not implemented)
+completions  Generate shell completions (Not tested)
 ```
 
 ## Build a database
@@ -129,4 +129,4 @@ cargo eir search database.eir fizzberry
 EIR is designed for fast local entity resolution using aliases, indexes, metadata, and relationships.
 
 *Contains AI-assisted code
-All art and icons are made by Humans*
+All art and icons are made by humans.*
