@@ -283,11 +283,7 @@ impl Resolver {
     pub fn from_database(database: &Database) -> Self {
         let mut resolver = Self::new();
 
-        resolver.attribute_names = database
-            .attribute_keys
-            .iter()
-            .map(|id| id.to_string().into_boxed_str())
-            .collect();
+        resolver.attribute_names = database.attribute_keys.clone();
 
         for (id, key) in database.attribute_keys.iter().enumerate() {
             resolver.register_attribute(id as AttributeKeyID, key.clone());
