@@ -4,13 +4,12 @@ use super::BuilderContext;
 use super::fixture::{FixtureEntity, FixtureSource};
 
 fn map_source(source: FixtureSource, ctx: &mut BuilderContext) -> EntitySource {
+    let id = ctx.sources.intern(&source.provider);
+
     EntitySource {
-        id: ctx.sources.intern(&source.provider),
-
+        id,
         provider: source.provider,
-
         verified: source.verified,
-
         created: source.created,
         updated: source.updated,
     }
