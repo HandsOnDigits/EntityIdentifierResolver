@@ -18,6 +18,8 @@ pub struct Indexes {
 
     pub tags: PostingList<TagID>,
     pub sources: PostingList<SourceID>,
+
+    pub attributes: InvertedIndex,
 }
 
 #[derive(Archive, Serialize, Deserialize, Debug)]
@@ -53,6 +55,18 @@ impl IndexBuilder {
 
             for source in &entity.sources {
                 indexes.sources.insert(*source, id);
+            }
+
+            for attribute in &entity.attributes {
+                let value = attribute.value.normalized();
+
+                indexes.attributes.insert(&attribute.key.to_string(), id);
+
+                indexes.attributes.insert(&value, id);
+
+                indexes
+                    .attributes
+                    .insert(&format!("{}:{}", attribute.key, value), id);
             }
         }
 
