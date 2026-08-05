@@ -24,6 +24,25 @@ impl Ranker {
         }
     }
 
+    fn calculate_score(sources: &HashSet<SearchSource>) -> f32 {
+        // Exact match dominates.
+        if sources.contains(&SearchSource::ExactAlias) {
+            return 1.0;
+        }
+
+        let mut score = sources
+            .iter()
+            .map(|source| Self::weight(*source))
+            .fold(0.0, f32::max);
+
+        // Multiple independent signals increase confidence.
+        if sources.len() > 1 {
+            score += 0.05;
+        }
+
+        score.min(1.0)
+    }
+
     pub fn rank(&self, candidates: Vec<(EntityID, SearchSource)>) -> Vec<SearchHit> {
         let mut merged: HashMap<EntityID, HashSet<SearchSource>> = HashMap::new();
 
@@ -34,10 +53,7 @@ impl Ranker {
         let mut results: Vec<SearchHit> = merged
             .into_iter()
             .map(|(entity_id, sources)| {
-                let score = sources
-                    .iter()
-                    .map(|source| Self::weight(*source))
-                    .fold(0.0, f32::max);
+                let score = Self::calculate_score(&sources);
 
                 SearchHit {
                     entity_id,
