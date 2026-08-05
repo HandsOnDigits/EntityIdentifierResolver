@@ -1,14 +1,7 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
-use super::resolver::SearchSource;
+use super::search::{SearchHit, SearchSource};
 use crate::entity::types::EntityID;
-
-#[derive(Debug, Clone)]
-pub struct SearchHit {
-    pub entity_id: EntityID,
-    pub score: f32,
-    pub sources: Vec<SearchSource>,
-}
 
 #[derive(Default)]
 pub struct Ranker;
@@ -18,24 +11,41 @@ impl Ranker {
         Self
     }
 
-    pub fn rank(&self, candidates: Vec<(EntityID, f32, SearchSource)>) -> Vec<SearchHit> {
-        let mut merged: HashMap<EntityID, SearchHit> = HashMap::new();
+    fn weight(source: SearchSource) -> f32 {
+        match source {
+            SearchSource::ExactAlias => 1.0,
+            SearchSource::PrefixAlias => 0.75,
+            SearchSource::FuzzyAlias => 0.60,
+            SearchSource::Token => 0.40,
+            SearchSource::Relationship => 0.50,
+            SearchSource::Tag => 0.30,
+            SearchSource::Property => 0.20,
+            SearchSource::Source => 0.10,
+        }
+    }
 
-        for (entity_id, score, source) in candidates {
-            merged
-                .entry(entity_id)
-                .and_modify(|hit| {
-                    hit.score += score;
-                    hit.sources.push(source);
-                })
-                .or_insert(SearchHit {
-                    entity_id,
-                    score,
-                    sources: vec![source],
-                });
+    pub fn rank(&self, candidates: Vec<(EntityID, SearchSource)>) -> Vec<SearchHit> {
+        let mut merged: HashMap<EntityID, HashSet<SearchSource>> = HashMap::new();
+
+        for (entity_id, source) in candidates {
+            merged.entry(entity_id).or_default().insert(source);
         }
 
-        let mut results: Vec<SearchHit> = merged.into_values().collect();
+        let mut results: Vec<SearchHit> = merged
+            .into_iter()
+            .map(|(entity_id, sources)| {
+                let score = sources
+                    .iter()
+                    .map(|source| Self::weight(*source))
+                    .fold(0.0, f32::max);
+
+                SearchHit {
+                    entity_id,
+                    score,
+                    sources,
+                }
+            })
+            .collect();
 
         results.sort_by(|a, b| b.score.total_cmp(&a.score));
 
