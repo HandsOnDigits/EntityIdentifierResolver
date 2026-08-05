@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
+    engine::Database,
     entity::EntityDocument,
     entity::types::{EntityID, PropertyID, SourceID, TagID},
     storage::PostingList,
@@ -20,6 +21,7 @@ pub enum SearchSource {
     Tag,
     Property,
     Relationship,
+    Source,
 }
 
 #[derive(Debug, Clone)]
@@ -41,6 +43,12 @@ pub struct Resolver {
     tags: PostingList<TagID>,
     properties: PostingList<PropertyID>,
     sources: PostingList<SourceID>,
+
+    tag_lookup: HashMap<Box<str>, TagID>,
+    property_lookup: HashMap<Box<str>, PropertyID>,
+    source_lookup: HashMap<Box<str>, SourceID>,
+
+    relationship_targets: PostingList<EntityID>,
 }
 
 impl Resolver {
@@ -76,7 +84,23 @@ impl Resolver {
             self.sources.insert(*source, id);
         }
 
+        for relationship in &input.relationships {
+            self.relationship_targets.insert(relationship.target, id);
+        }
+
         self.documents.insert(id, input);
+    }
+
+    pub fn register_tag(&mut self, id: TagID, name: Box<str>) {
+        self.tag_lookup.insert(name, id);
+    }
+
+    pub fn register_property(&mut self, id: PropertyID, name: Box<str>) {
+        self.property_lookup.insert(name, id);
+    }
+
+    pub fn register_source(&mut self, id: SourceID, name: Box<str>) {
+        self.source_lookup.insert(name, id);
     }
 
     pub fn get(&self, id: EntityID) -> Option<&EntityDocument> {
@@ -85,7 +109,7 @@ impl Resolver {
 
     /// Exact alias lookup.
     pub fn resolve(&self, alias: &str) -> &[EntityID] {
-        self.alias.resolve(alias).unwrap_or(&[])
+        self.alias.resolve(&normalize(alias)).unwrap_or(&[])
     }
 
     /// Prefix search.
@@ -101,6 +125,10 @@ impl Resolver {
     /// Token lookup.
     pub fn lookup(&self, term: &str) -> Vec<EntityID> {
         self.tokens.lookup(&normalize(term))
+    }
+
+    pub fn related_by_target(&self, entity: EntityID) -> Vec<EntityID> {
+        self.relationship_targets.lookup(entity)
     }
 
     /// High-level search.
@@ -126,10 +154,18 @@ impl Resolver {
 
         for id in self.resolve(query) {
             add_hit(*id, 1.0, SearchSource::ExactAlias);
+
+            for related in self.related_by_target(*id) {
+                add_hit(related, 0.7, SearchSource::Relationship);
+            }
         }
 
         for id in self.prefix(query) {
             add_hit(id, 0.8, SearchSource::PrefixAlias);
+
+            for related in self.related_by_target(id) {
+                add_hit(related, 0.6, SearchSource::Relationship);
+            }
         }
 
         for id in self.fuzzy(query, 1) {
@@ -138,6 +174,18 @@ impl Resolver {
 
         for id in self.lookup(query) {
             add_hit(id, 0.5, SearchSource::Token);
+        }
+
+        for id in self.tag_search(query) {
+            add_hit(id, 0.4, SearchSource::Tag);
+        }
+
+        for id in self.property_search(query) {
+            add_hit(id, 0.3, SearchSource::Property);
+        }
+
+        for id in self.source_search(query) {
+            add_hit(id, 0.2, SearchSource::Source);
         }
 
         let mut results: Vec<SearchResult<'a>> = merged
@@ -154,6 +202,55 @@ impl Resolver {
         results.sort_by(|a, b| b.score.total_cmp(&a.score));
         results
     }
+
+    pub fn tag_search(&self, tag: &str) -> Vec<EntityID> {
+        let key = normalize(tag);
+
+        match self.tag_lookup.get(key.as_ref()) {
+            Some(id) => self.tags.lookup(*id),
+            None => Vec::new(),
+        }
+    }
+
+    pub fn property_search(&self, property: &str) -> Vec<EntityID> {
+        let key = normalize(property);
+
+        match self.property_lookup.get(key.as_ref()) {
+            Some(id) => self.properties.lookup(*id),
+            None => Vec::new(),
+        }
+    }
+
+    pub fn source_search(&self, source: &str) -> Vec<EntityID> {
+        let key = normalize(source);
+
+        match self.source_lookup.get(key.as_ref()) {
+            Some(id) => self.sources.lookup(*id),
+            None => Vec::new(),
+        }
+    }
+
+    pub fn from_database(database: &Database) -> Self {
+        let mut resolver = Self::new();
+
+        for (id, tag) in database.tags.iter().enumerate() {
+            resolver.register_tag(id as TagID, tag.clone());
+        }
+
+        for (id, property) in database.properties.iter().enumerate() {
+            resolver.register_property(id as PropertyID, property.clone());
+        }
+
+        for (id, source) in database.sources.iter().enumerate() {
+            resolver.register_source(id as SourceID, source.clone());
+        }
+
+        for entity in &database.entities {
+            resolver.add(entity.clone());
+        }
+
+        resolver
+    }
 }
 
 impl Default for Resolver {
@@ -169,6 +266,12 @@ impl Default for Resolver {
             tags: PostingList::<TagID>::default(),
             properties: PostingList::<PropertyID>::default(),
             sources: PostingList::<SourceID>::default(),
+
+            tag_lookup: HashMap::new(),
+            property_lookup: HashMap::new(),
+            source_lookup: HashMap::new(),
+
+            relationship_targets: PostingList::<EntityID>::default(),
         }
     }
 }
