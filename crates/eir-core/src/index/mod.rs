@@ -3,14 +3,16 @@ mod bk_tree;
 mod inverted;
 mod ranker;
 mod resolver;
+mod search;
 mod trie;
 pub mod utils;
 
 pub use alias::{AliasIndex, AliasIndexRecord};
 pub use bk_tree::{BKTreeIndex, BKTreeIndexRecord};
 pub use inverted::{InvertedIndex, InvertedIndexRecord};
-pub use ranker::{Ranker, SearchHit};
-pub use resolver::{Resolver, SearchResult};
+pub use ranker::Ranker;
+pub use resolver::Resolver;
+pub use search::{SearchHit, SearchResult};
 pub use trie::{TrieIndex, TrieIndexRecord};
 
 pub mod prelude {
