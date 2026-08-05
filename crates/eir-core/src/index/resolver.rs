@@ -1,11 +1,11 @@
-use super::search::{SearchResult, SearchSource};
+use super::search::{SearchExplanation, SearchResult, SearchSource};
 
 use std::collections::HashMap;
 
 use crate::{
     engine::Database,
     entity::EntityDocument,
-    entity::types::{EntityID, PropertyID, SourceID, TagID},
+    entity::types::{EntityID, PropertyID, Relationship, SourceID, TagID},
     storage::PostingList,
 };
 
@@ -76,15 +76,15 @@ impl Resolver {
     }
 
     pub fn register_tag(&mut self, id: TagID, name: Box<str>) {
-        self.tag_lookup.insert(name, id);
+        self.tag_lookup.insert(normalize(&name), id);
     }
 
     pub fn register_property(&mut self, id: PropertyID, name: Box<str>) {
-        self.property_lookup.insert(name, id);
+        self.property_lookup.insert(normalize(&name), id);
     }
 
     pub fn register_source(&mut self, id: SourceID, name: Box<str>) {
-        self.source_lookup.insert(name, id);
+        self.source_lookup.insert(normalize(&name), id);
     }
 
     pub fn get(&self, id: EntityID) -> Option<&EntityDocument> {
@@ -111,30 +111,117 @@ impl Resolver {
         self.tokens.lookup(&normalize(term))
     }
 
-    pub fn related_by_target(&self, entity: EntityID) -> Vec<EntityID> {
-        self.relationship_targets.lookup(entity)
+    pub fn relationships_for(&self, entity: EntityID) -> Vec<&Relationship> {
+        self.documents
+            .get(&entity)
+            .map(|doc| doc.relationships.iter().collect())
+            .unwrap_or_default()
+    }
+
+    pub fn related_to_target(&self, target: EntityID) -> Vec<(EntityID, &Relationship)> {
+        let mut out = Vec::new();
+
+        for (entity_id, doc) in &self.documents {
+            for relationship in &doc.relationships {
+                if relationship.target == target {
+                    out.push((*entity_id, relationship));
+                }
+            }
+        }
+
+        out
     }
 
     /// High-level search.
     pub fn search<'a>(&'a self, query: &str) -> Vec<SearchResult<'a>> {
         let query = normalize(query);
 
-        let mut candidates = Vec::<(EntityID, SearchSource)>::new();
+        let mut candidates: Vec<(EntityID, SearchSource, SearchExplanation)> = Vec::new();
+
+        if let Some(tag_id) = self.tag_search(&query) {
+            for id in self.tags.lookup(tag_id) {
+                candidates.push((
+                    id,
+                    SearchSource::Tag,
+                    SearchExplanation::Tag { tag: tag_id },
+                ));
+            }
+        }
+
+        if let Some(property_id) = self.property_search(&query) {
+            for id in self.properties.lookup(property_id) {
+                candidates.push((
+                    id,
+                    SearchSource::Property,
+                    SearchExplanation::Property {
+                        property: property_id,
+                    },
+                ));
+            }
+        }
+
+        // Relationship matches
+        for &target in self.resolve(&query) {
+            for (entity_id, relationship) in self.related_to_target(target) {
+                candidates.push((
+                    entity_id,
+                    SearchSource::Relationship,
+                    SearchExplanation::Relationship {
+                        kind: relationship.kind.clone(),
+                        target,
+                    },
+                ));
+            }
+        }
 
         for &id in self.resolve(&query) {
-            candidates.push((id, SearchSource::ExactAlias));
+            candidates.push((
+                id,
+                SearchSource::ExactAlias,
+                SearchExplanation::ExactAlias {
+                    alias: query.clone(),
+                },
+            ));
         }
 
         for id in self.prefix(&query) {
-            candidates.push((id, SearchSource::PrefixAlias));
+            candidates.push((
+                id,
+                SearchSource::PrefixAlias,
+                SearchExplanation::PrefixAlias {
+                    alias: query.clone(),
+                },
+            ));
         }
 
         for id in self.fuzzy(&query, 1) {
-            candidates.push((id, SearchSource::FuzzyAlias));
+            candidates.push((
+                id,
+                SearchSource::FuzzyAlias,
+                SearchExplanation::FuzzyAlias {
+                    alias: query.clone(),
+                },
+            ));
         }
 
         for id in self.lookup(&query) {
-            candidates.push((id, SearchSource::Token));
+            candidates.push((
+                id,
+                SearchSource::Token,
+                SearchExplanation::Token {
+                    token: query.clone(),
+                },
+            ));
+        }
+
+        if let Some(source_id) = self.source_search(&query) {
+            for id in self.sources.lookup(source_id) {
+                candidates.push((
+                    id,
+                    SearchSource::Source,
+                    SearchExplanation::Source { source: source_id },
+                ));
+            }
         }
 
         self.ranker
@@ -147,36 +234,28 @@ impl Resolver {
                         entity,
                         score: hit.score,
                         sources: hit.sources,
+                        explanations: hit.explanations,
                     })
             })
             .collect()
     }
 
-    pub fn tag_search(&self, tag: &str) -> Vec<EntityID> {
+    pub fn tag_search(&self, tag: &str) -> Option<TagID> {
         let key = normalize(tag);
 
-        match self.tag_lookup.get(key.as_ref()) {
-            Some(id) => self.tags.lookup(*id),
-            None => Vec::new(),
-        }
+        self.tag_lookup.get(key.as_ref()).copied()
     }
 
-    pub fn property_search(&self, property: &str) -> Vec<EntityID> {
+    pub fn property_search(&self, property: &str) -> Option<PropertyID> {
         let key = normalize(property);
 
-        match self.property_lookup.get(key.as_ref()) {
-            Some(id) => self.properties.lookup(*id),
-            None => Vec::new(),
-        }
+        self.property_lookup.get(key.as_ref()).copied()
     }
 
-    pub fn source_search(&self, source: &str) -> Vec<EntityID> {
+    pub fn source_search(&self, source: &str) -> Option<SourceID> {
         let key = normalize(source);
 
-        match self.source_lookup.get(key.as_ref()) {
-            Some(id) => self.sources.lookup(*id),
-            None => Vec::new(),
-        }
+        self.source_lookup.get(key.as_ref()).copied()
     }
 
     pub fn from_database(database: &Database) -> Self {
