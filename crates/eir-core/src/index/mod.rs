@@ -12,7 +12,7 @@ pub use bk_tree::{BKTreeIndex, BKTreeIndexRecord};
 pub use inverted::{InvertedIndex, InvertedIndexRecord};
 pub use ranker::Ranker;
 pub use resolver::Resolver;
-pub use search::{SearchHit, SearchResult};
+pub use search::SearchResult;
 pub use trie::{TrieIndex, TrieIndexRecord};
 
 pub mod prelude {
