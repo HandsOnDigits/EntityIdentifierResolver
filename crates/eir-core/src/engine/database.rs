@@ -5,7 +5,7 @@ use crate::{
         EntityDocument,
         types::{SourceID, TagID},
     },
-    index::{AliasIndexRecord, BKTreeIndexRecord, InvertedIndexRecord, TrieIndexRecord},
+    index::{AliasIndexRecord, BKTreeIndexRecord, InvertedIndexRecord, Resolver, TrieIndexRecord},
     storage::PostingListRecord,
 };
 
@@ -24,4 +24,10 @@ pub struct Database {
 
     pub tag_index: PostingListRecord<TagID>,
     pub source_index: PostingListRecord<SourceID>,
+}
+
+impl Database {
+    pub fn resolver(&self) -> Resolver {
+        Resolver::from_database(self)
+    }
 }
