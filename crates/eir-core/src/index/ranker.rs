@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-use super::search::{SearchHit, SearchSource};
+use super::search::{SearchExplanation, SearchHit, SearchSource};
 use crate::entity::types::EntityID;
 
 #[derive(Default)]
@@ -13,14 +13,22 @@ impl Ranker {
 
     fn weight(source: SearchSource) -> f32 {
         match source {
-            SearchSource::ExactAlias => 1.0,
+            SearchSource::ExactAlias => 1.00,
+
+            // name similarity
             SearchSource::PrefixAlias => 0.75,
             SearchSource::FuzzyAlias => 0.60,
             SearchSource::Token => 0.40,
-            SearchSource::Relationship => 0.50,
-            SearchSource::Tag => 0.30,
-            SearchSource::Property => 0.20,
-            SearchSource::Source => 0.10,
+
+            // graph signals
+            SearchSource::Relationship => 0.55,
+
+            // metadata
+            SearchSource::Tag => 0.35,
+            SearchSource::Property => 0.30,
+
+            // provenance
+            SearchSource::Source => 0.45,
         }
     }
 
@@ -30,36 +38,44 @@ impl Ranker {
             return 1.0;
         }
 
-        let mut score = sources
+        let base = sources
             .iter()
             .map(|source| Self::weight(*source))
             .fold(0.0, f32::max);
 
-        // Multiple independent signals increase confidence.
-        if sources.len() > 1 {
-            score += 0.05;
-        }
+        let bonus = match sources.len() {
+            0 | 1 => 0.0,
+            2 => 0.05,
+            3 => 0.10,
+            _ => 0.15,
+        };
 
-        score.min(1.0)
+        (base + bonus).min(0.95)
     }
 
-    pub fn rank(&self, candidates: Vec<(EntityID, SearchSource)>) -> Vec<SearchHit> {
-        let mut merged: HashMap<EntityID, HashSet<SearchSource>> = HashMap::new();
+    pub fn rank(
+        &self,
+        candidates: Vec<(EntityID, SearchSource, SearchExplanation)>,
+    ) -> Vec<SearchHit> {
+        let mut merged: HashMap<EntityID, SearchHit> = HashMap::new();
 
-        for (entity_id, source) in candidates {
-            merged.entry(entity_id).or_default().insert(source);
+        for (entity_id, source, explanation) in candidates {
+            let entry = merged.entry(entity_id).or_insert_with(|| SearchHit {
+                entity_id,
+                score: 0.0,
+                sources: HashSet::new(),
+                explanations: HashSet::new(),
+            });
+
+            entry.sources.insert(source);
+            entry.explanations.insert(explanation);
         }
 
         let mut results: Vec<SearchHit> = merged
-            .into_iter()
-            .map(|(entity_id, sources)| {
-                let score = Self::calculate_score(&sources);
-
-                SearchHit {
-                    entity_id,
-                    score,
-                    sources,
-                }
+            .into_values()
+            .map(|mut hit| {
+                hit.score = Self::calculate_score(&hit.sources);
+                hit
             })
             .collect();
 
