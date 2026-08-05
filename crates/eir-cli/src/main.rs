@@ -35,9 +35,7 @@ fn main() -> anyhow::Result<()> {
             generate_completions(shell)?;
         }
 
-        Commands::Search { query } => {
-            println!("Search: {}", query);
-        }
+        Commands::Search(args) => commands::search::execute(args)?,
 
         Commands::Build { input, output } => {
             commands::build::execute(input, output)?;
