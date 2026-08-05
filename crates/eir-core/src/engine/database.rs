@@ -22,6 +22,8 @@ pub struct Database {
     pub bk_tree_index: BKTreeIndexRecord,
     pub inverted_index: InvertedIndexRecord,
 
+    pub attribute_index: InvertedIndexRecord,
+
     pub tag_index: PostingListRecord<TagID>,
     pub source_index: PostingListRecord<SourceID>,
 }
