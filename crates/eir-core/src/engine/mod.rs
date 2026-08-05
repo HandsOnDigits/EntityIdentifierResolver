@@ -5,7 +5,7 @@ mod search;
 
 pub use builder::EngineBuilder;
 pub use database::Database;
-pub use loader::load_database;
+pub use loader::{load_database, load_database_owned};
 
 use std::path::Path;
 
