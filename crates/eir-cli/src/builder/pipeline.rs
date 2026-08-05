@@ -15,14 +15,16 @@ pub fn build(
         .map(|entity| mapper::map(entity, &mut ctx))
         .collect::<Vec<_>>();
 
-    let indexes = IndexBuilder::build(&entities);
+    let attribute_keys = ctx.attribute_keys.into_inner();
+
+    let indexes = IndexBuilder::build(&entities, &attribute_keys);
 
     let database = Database {
         entities,
 
         tags: ctx.tags.into_inner(),
         sources: ctx.sources.into_inner(),
-        attribute_keys: ctx.attribute_keys.into_inner(),
+        attribute_keys,
 
         alias_index: indexes.alias.to_record(),
         trie_index: indexes.trie.to_record(),
@@ -33,6 +35,7 @@ pub fn build(
 
         tag_index: indexes.tags.to_record(),
         source_index: indexes.sources.to_record(),
+        relationship_index: indexes.relationships.to_record(),
     };
 
     write_database(database, output)?;

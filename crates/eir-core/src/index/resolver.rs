@@ -73,7 +73,7 @@ impl Resolver {
                 .attribute_names
                 .get(attribute.key as usize)
                 .map(|x| x.to_string())
-                .unwrap_or_default();
+                .expect("invalid attribute key");
 
             let value = attribute.value.normalized();
 
@@ -199,19 +199,6 @@ impl Resolver {
             }
         }
 
-        // Attribute key search
-        if let Some(attribute) = attribute {
-            for id in self.attribute_value_search(attribute.key, attribute.value) {
-                candidates.push((
-                    id,
-                    SearchSource::Attribute,
-                    SearchExplanation::Attribute {
-                        term: query.clone(),
-                    },
-                ));
-            }
-        }
-
         // Relationship matches
         for &target in self.resolve(&query) {
             for (entity_id, relationship) in self.related_to_target(target) {
@@ -266,6 +253,31 @@ impl Resolver {
             ));
         }
 
+        // Attribute key:value search
+        if let Some(attribute) = attribute {
+            for id in self.attribute_value_search(attribute.key, attribute.value) {
+                candidates.push((
+                    id,
+                    SearchSource::AttributeValue,
+                    SearchExplanation::AttributeValue {
+                        key: normalize(attribute.key),
+                        value: normalize(attribute.value),
+                    },
+                ));
+            }
+        }
+
+        // Generic attribute search
+        for id in self.attribute_search(&query) {
+            candidates.push((
+                id,
+                SearchSource::Attribute,
+                SearchExplanation::Attribute {
+                    term: query.clone(),
+                },
+            ));
+        }
+
         if let Some(source_id) = self.source_search(&query) {
             for id in self.sources.lookup(source_id) {
                 candidates.push((
@@ -305,27 +317,50 @@ impl Resolver {
     }
 
     pub fn from_database(database: &Database) -> Self {
-        let mut resolver = Self::new();
+        Self {
+            documents: database
+                .entities
+                .iter()
+                .map(|entity| (entity.id, entity.clone()))
+                .collect(),
 
-        for entity in &database.entities {
-            resolver.add(entity.clone());
+            alias: AliasIndex::from_record(database.alias_index.clone()),
+            trie: TrieIndex::from_record(database.trie_index.clone()),
+            fuzzy: BKTreeIndex::from_record(database.bk_tree_index.clone()),
+            tokens: InvertedIndex::from_record(database.inverted_index.clone()),
+
+            tags: PostingList::from_archive(database.tag_index.clone()),
+            sources: PostingList::from_archive(database.source_index.clone()),
+
+            attribute_lookup: database
+                .attribute_keys
+                .iter()
+                .enumerate()
+                .map(|(id, key)| (normalize(key), id as AttributeKeyID))
+                .collect(),
+
+            attribute_names: database.attribute_keys.clone(),
+
+            attribute_index: InvertedIndex::from_record(database.attribute_index.clone()),
+
+            tag_lookup: database
+                .tags
+                .iter()
+                .enumerate()
+                .map(|(id, tag)| (normalize(tag), id as TagID))
+                .collect(),
+
+            source_lookup: database
+                .sources
+                .iter()
+                .enumerate()
+                .map(|(id, source)| (normalize(source), id as SourceID))
+                .collect(),
+
+            relationship_targets: PostingList::from_archive(database.relationship_index.clone()),
+
+            ranker: Ranker::default(),
         }
-
-        resolver.attribute_names = database.attribute_keys.clone();
-
-        for (id, key) in database.attribute_keys.iter().enumerate() {
-            resolver.register_attribute(id as AttributeKeyID, key.clone());
-        }
-
-        for (id, tag) in database.tags.iter().enumerate() {
-            resolver.register_tag(id as TagID, tag.clone());
-        }
-
-        for (id, source) in database.sources.iter().enumerate() {
-            resolver.register_source(id as SourceID, source.clone());
-        }
-
-        resolver
     }
 }
 

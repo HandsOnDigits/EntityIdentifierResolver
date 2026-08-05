@@ -2,7 +2,7 @@ use rkyv::{Archive, Deserialize, Serialize};
 
 use crate::entity::{
     EntityDocument,
-    types::{SourceID, TagID},
+    types::{EntityID, SourceID, TagID},
 };
 
 use crate::{index::prelude::*, utils::normalize};
@@ -20,6 +20,7 @@ pub struct Indexes {
     pub sources: PostingList<SourceID>,
 
     pub attributes: InvertedIndex,
+    pub relationships: PostingList<EntityID>,
 }
 
 #[derive(Archive, Serialize, Deserialize, Debug)]
@@ -31,7 +32,7 @@ pub struct ArchivedIndexes {
 pub struct IndexBuilder;
 
 impl IndexBuilder {
-    pub fn build(inputs: &[EntityDocument]) -> Indexes {
+    pub fn build(inputs: &[EntityDocument], attribute_keys: &[Box<str>]) -> Indexes {
         let mut indexes = Indexes::default();
 
         for entity in inputs {
@@ -58,15 +59,23 @@ impl IndexBuilder {
             }
 
             for attribute in &entity.attributes {
+                let Some(key) = attribute_keys.get(attribute.key as usize) else {
+                    continue;
+                };
+
                 let value = attribute.value.normalized();
 
-                indexes.attributes.insert(&attribute.key.to_string(), id);
-
+                indexes.attributes.insert(key, id);
                 indexes.attributes.insert(&value, id);
+                indexes.attributes.insert(&format!("{key}:{value}"), id);
 
-                indexes
-                    .attributes
-                    .insert(&format!("{}:{}", attribute.key, value), id);
+                for token in value.split_whitespace() {
+                    indexes.attributes.insert(token, id);
+                }
+            }
+
+            for relationship in &entity.relationships {
+                indexes.relationships.insert(relationship.target, entity.id);
             }
         }
 

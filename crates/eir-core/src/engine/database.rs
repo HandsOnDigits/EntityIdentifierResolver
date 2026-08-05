@@ -3,7 +3,7 @@ use rkyv::{Archive, Deserialize, Serialize, bytecheck::CheckBytes};
 use crate::{
     entity::{
         EntityDocument,
-        types::{SourceID, TagID},
+        types::{EntityID, SourceID, TagID},
     },
     index::{AliasIndexRecord, BKTreeIndexRecord, InvertedIndexRecord, Resolver, TrieIndexRecord},
     storage::PostingListRecord,
@@ -26,6 +26,8 @@ pub struct Database {
 
     pub tag_index: PostingListRecord<TagID>,
     pub source_index: PostingListRecord<SourceID>,
+
+    pub relationship_index: PostingListRecord<EntityID>,
 }
 
 impl Database {

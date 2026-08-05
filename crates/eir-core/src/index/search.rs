@@ -57,6 +57,11 @@ pub enum SearchExplanation {
         term: Box<str>,
     },
 
+    AttributeValue {
+        key: Box<str>,
+        value: Box<str>,
+    },
+
     Source {
         source: SourceID,
     },

@@ -25,8 +25,8 @@ impl Ranker {
 
             // metadata
             SearchSource::Tag => 0.25,
-            SearchSource::Attribute => 0.30,
             SearchSource::AttributeValue => 0.70,
+            SearchSource::Attribute => 0.30,
 
             // provenance
             SearchSource::Source => 0.45,
