@@ -104,6 +104,7 @@ impl From<std::io::Error> for EntityError {
     Copy,
     PartialEq,
     Eq,
+    Hash,
 )]
 pub enum RelationshipType {
     IsA,
