@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use eir_core::{Database, storage::IndexBuilder};
 
 use super::{context::BuilderContext, loader::load_entities, mapper, writer::write_database};
@@ -12,21 +10,12 @@ pub fn build(
 
     let fixtures = load_entities(input)?;
 
-    let inputs = fixtures
+    let entities = fixtures
         .into_iter()
         .map(|entity| mapper::map(entity, &mut ctx))
         .collect::<Vec<_>>();
 
-    let indexes = IndexBuilder::build(&inputs);
-
-    let mut aliases = HashMap::new();
-    let mut entities = Vec::new();
-
-    for input in inputs {
-        aliases.insert(input.id, input.aliases.clone());
-
-        entities.push(input);
-    }
+    let indexes = IndexBuilder::build(&entities);
 
     let database = Database {
         entities,
