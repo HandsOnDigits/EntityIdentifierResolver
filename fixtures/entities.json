@@ -3,7 +3,7 @@
     "id": 9000,
     "names": ["Open Food Facts"],
     "tags": ["source", "database"],
-    "properties": [],
+    "attributes": [],
     "relationships": [],
     "sources": []
   },
@@ -11,7 +11,7 @@
     "id": 9001,
     "names": ["Manufacturer Registry"],
     "tags": ["source", "registry"],
-    "properties": [],
+    "attributes": [],
     "relationships": [],
     "sources": []
   },
@@ -19,7 +19,7 @@
     "id": 9002,
     "names": ["Country Registry"],
     "tags": ["source", "registry"],
-    "properties": [],
+    "attributes": [],
     "relationships": [],
     "sources": []
   },
@@ -28,7 +28,7 @@
     "id": 1000,
     "names": ["Aurora Foods", "Aurora"],
     "tags": ["food", "manufacturer", "company"],
-    "properties": [],
+    "attributes": [],
     "relationships": [],
     "sources": [
       {
@@ -42,7 +42,7 @@
     "id": 1001,
     "names": ["Golden Harvest Group", "Golden Harvest"],
     "tags": ["food", "manufacturer", "company"],
-    "properties": [],
+    "attributes": [],
     "relationships": [],
     "sources": [
       {
@@ -56,7 +56,7 @@
     "id": 1002,
     "names": ["PureSpring Ltd", "PureSpring"],
     "tags": ["water", "manufacturer", "company"],
-    "properties": [],
+    "attributes": [],
     "relationships": [],
     "sources": [
       {
@@ -70,7 +70,7 @@
     "id": 1003,
     "names": ["Moon Foods", "Moon"],
     "tags": ["plant", "manufacturer", "company"],
-    "properties": [],
+    "attributes": [],
     "relationships": [],
     "sources": [
       {
@@ -84,7 +84,7 @@
     "id": 1004,
     "names": ["FrostPeak Industries", "FrostPeak"],
     "tags": ["frozen", "manufacturer", "company"],
-    "properties": [],
+    "attributes": [],
     "relationships": [],
     "sources": [
       {
@@ -98,7 +98,7 @@
     "id": 1,
     "names": ["FizzBerry Spark", "Berry Spark", "FizzBerry"],
     "tags": ["sparkling", "berry", "drink", "sweet", "food"],
-    "properties": [
+    "attributes": [
       {
         "key": "volume",
         "value": "330ml"
@@ -130,7 +130,7 @@
     "id": 2,
     "names": ["Golden Grain Crunch", "Grain Crunch", "Golden Cereal"],
     "tags": ["crunchy", "grain", "snack", "food"],
-    "properties": [],
+    "attributes": [],
     "relationships": [
       {
         "target": 1001,
@@ -157,7 +157,7 @@
     "id": 3,
     "names": ["Crystal Spring Water", "Crystal Water", "Spring Water"],
     "tags": ["water", "still", "drink", "food"],
-    "properties": [],
+    "attributes": [],
     "relationships": [
       {
         "target": 1002,
@@ -184,7 +184,7 @@
     "id": 4,
     "names": ["Moonlight Oat Blend", "Oat Blend"],
     "tags": ["oat", "plant", "drink", "food"],
-    "properties": [],
+    "attributes": [],
     "relationships": [{ "target": 1003, "kind": "MadeBy" }],
     "sources": [{ "provider": "Open Food Facts", "verified": true }]
   },
@@ -193,7 +193,7 @@
     "id": 5,
     "names": ["FrostPeak Pizza Bites", "Pizza Bites"],
     "tags": ["pizza", "frozen", "snack", "food"],
-    "properties": [],
+    "attributes": [],
     "relationships": [{ "target": 1004, "kind": "MadeBy" }],
     "sources": [{ "provider": "Open Food Facts", "verified": true }]
   },
@@ -202,7 +202,7 @@
     "id": 6,
     "names": ["Aurora Tomato Soup", "Tomato Soup"],
     "tags": ["soup", "vegetable", "food"],
-    "properties": [],
+    "attributes": [],
     "relationships": [{ "target": 1000, "kind": "MadeBy" }],
     "sources": [{ "provider": "Open Food Facts", "verified": true }]
   },
@@ -211,7 +211,7 @@
     "id": 7,
     "names": ["Aurora Wholegrain Bread", "Wholegrain Bread"],
     "tags": ["bread", "bakery", "food"],
-    "properties": [],
+    "attributes": [],
     "relationships": [{ "target": 1000, "kind": "MadeBy" }],
     "sources": [{ "provider": "Open Food Facts", "verified": true }]
   },
@@ -220,7 +220,7 @@
     "id": 8,
     "names": ["Golden Harvest Muesli", "Harvest Muesli"],
     "tags": ["breakfast", "grain", "food"],
-    "properties": [],
+    "attributes": [],
     "relationships": [{ "target": 1001, "kind": "MadeBy" }],
     "sources": [{ "provider": "Open Food Facts", "verified": true }]
   },
@@ -229,7 +229,7 @@
     "id": 9,
     "names": ["Golden Harvest Oat Cookies", "Oat Cookies"],
     "tags": ["cookie", "oat", "snack", "food"],
-    "properties": [],
+    "attributes": [],
     "relationships": [{ "target": 1001, "kind": "MadeBy" }],
     "sources": [{ "provider": "Open Food Facts", "verified": true }]
   },
@@ -238,7 +238,7 @@
     "id": 10,
     "names": ["PureSpring Mineral Water", "Mineral Water"],
     "tags": ["water", "mineral", "drink", "food"],
-    "properties": [],
+    "attributes": [],
     "relationships": [{ "target": 1002, "kind": "MadeBy" }],
     "sources": [{ "provider": "Open Food Facts", "verified": true }]
   },
@@ -247,7 +247,7 @@
     "id": 11,
     "names": ["PureSpring Sparkling Water", "Sparkling Water"],
     "tags": ["water", "sparkling", "drink", "food"],
-    "properties": [],
+    "attributes": [],
     "relationships": [{ "target": 1002, "kind": "MadeBy" }],
     "sources": [{ "provider": "Open Food Facts", "verified": true }]
   },
@@ -256,7 +256,7 @@
     "id": 12,
     "names": ["Moon Plant Burger", "Plant Burger"],
     "tags": ["plant", "burger", "food"],
-    "properties": [],
+    "attributes": [],
     "relationships": [{ "target": 1003, "kind": "MadeBy" }],
     "sources": [{ "provider": "Open Food Facts", "verified": true }]
   },
@@ -265,7 +265,7 @@
     "id": 13,
     "names": ["FrostPeak Chicken Nuggets", "Chicken Nuggets"],
     "tags": ["chicken", "frozen", "food"],
-    "properties": [],
+    "attributes": [],
     "relationships": [{ "target": 1004, "kind": "MadeBy" }],
     "sources": [{ "provider": "Open Food Facts", "verified": true }]
   },
@@ -274,7 +274,7 @@
     "id": 2000,
     "names": ["Drink", "Beverage"],
     "tags": ["food", "liquid", "category"],
-    "properties": [],
+    "attributes": [],
     "relationships": [],
     "sources": []
   },
@@ -283,7 +283,7 @@
     "id": 2001,
     "names": ["Snack", "Snack Food"],
     "tags": ["food", "small-meal", "category"],
-    "properties": [],
+    "attributes": [],
     "relationships": [],
     "sources": []
   },
@@ -292,7 +292,7 @@
     "id": 2002,
     "names": ["Bakery", "Bread"],
     "tags": ["food", "bakery", "category"],
-    "properties": [],
+    "attributes": [],
     "relationships": [],
     "sources": []
   },
@@ -301,7 +301,7 @@
     "id": 2003,
     "names": ["Frozen Food", "Frozen"],
     "tags": ["food", "cold-storage", "category"],
-    "properties": [],
+    "attributes": [],
     "relationships": [],
     "sources": []
   },
@@ -310,7 +310,7 @@
     "id": 2004,
     "names": ["Plant Based", "Vegan"],
     "tags": ["food", "plant", "category"],
-    "properties": [],
+    "attributes": [],
     "relationships": [],
     "sources": []
   },
@@ -319,7 +319,7 @@
     "id": 3000,
     "names": ["Denmark", "DK"],
     "tags": ["country", "europe"],
-    "properties": [],
+    "attributes": [],
     "relationships": [],
     "sources": []
   },
@@ -328,7 +328,7 @@
     "id": 3001,
     "names": ["Sweden", "SE"],
     "tags": ["country", "europe"],
-    "properties": [],
+    "attributes": [],
     "relationships": [],
     "sources": []
   },
@@ -337,7 +337,7 @@
     "id": 3002,
     "names": ["Norway", "NO"],
     "tags": ["country", "europe"],
-    "properties": [],
+    "attributes": [],
     "relationships": [],
     "sources": []
   },
@@ -346,7 +346,7 @@
     "id": 3003,
     "names": ["Finland", "FI"],
     "tags": ["country", "europe"],
-    "properties": [],
+    "attributes": [],
     "relationships": [],
     "sources": []
   },
@@ -355,7 +355,7 @@
     "id": 14,
     "names": ["FizzBerry Spark Zero", "FizzBerry Zero"],
     "tags": ["sparkling", "drink", "food", "sugar-free"],
-    "properties": [
+    "attributes": [
       {
         "key": "volume",
         "value": "330ml"
@@ -387,7 +387,7 @@
     "id": 15,
     "names": ["Large Crystal Water"],
     "tags": ["water", "drink"],
-    "properties": [
+    "attributes": [
       {
         "key": "volume",
         "value": "1500ml"
@@ -411,7 +411,7 @@
     "id": 16,
     "names": ["Aurora Organic Soup"],
     "tags": ["soup", "organic", "food"],
-    "properties": [
+    "attributes": [
       {
         "key": "organic",
         "value": "true"
@@ -439,7 +439,7 @@
     "id": 17,
     "names": ["Pure Spring Water"],
     "tags": ["water", "drink"],
-    "properties": [],
+    "attributes": [],
     "relationships": [],
     "sources": [
       {
@@ -453,7 +453,7 @@
     "id": 18,
     "names": ["Aurora Family Pack"],
     "tags": ["bundle", "food"],
-    "properties": [
+    "attributes": [
       {
         "key": "items",
         "value": "6"

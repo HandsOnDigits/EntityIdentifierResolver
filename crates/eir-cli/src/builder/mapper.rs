@@ -28,10 +28,13 @@ pub fn map(entity: FixtureEntity, ctx: &mut BuilderContext) -> EntityDocument {
             .map(|tag| ctx.tags.intern(&tag))
             .collect(),
 
-        properties: entity
-            .properties
-            .into_iter()
-            .map(|property| ctx.properties.intern(&property.key))
+        attributes: entity
+            .attributes
+            .iter()
+            .map(|attribute| Attribute {
+                key: ctx.attribute_keys.intern(&attribute.key),
+                value: Value::String(attribute.value.clone().into_boxed_str()),
+            })
             .collect(),
 
         relationships: entity.relationships,

@@ -2,14 +2,15 @@ use bytecheck::CheckBytes;
 
 use rkyv::{Archive, Deserialize, Serialize};
 
-use crate::entity::types::EntityID;
+use crate::{
+    entity::types::{Alias, EntityID},
+    utils::normalize,
+};
 
 #[derive(Default, Debug)]
 pub struct BKTreeIndex {
-    root: Vec<(Box<str>, EntityID)>,
+    root: Vec<(Alias, EntityID)>,
 }
-
-use super::utils::normalize;
 
 impl BKTreeIndex {
     pub fn insert(&mut self, text: &str, entity_id: EntityID) {

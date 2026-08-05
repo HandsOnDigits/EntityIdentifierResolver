@@ -5,7 +5,7 @@ pub struct BuilderContext {
 
     pub sources: Registry<SourceID>,
 
-    pub properties: Registry<PropertyID>,
+    pub attribute_keys: Registry<AttributeKeyID>,
 }
 
 impl BuilderContext {
@@ -15,7 +15,7 @@ impl BuilderContext {
 
             sources: Registry::default(),
 
-            properties: Registry::default(),
+            attribute_keys: Registry::default(),
         }
     }
 }

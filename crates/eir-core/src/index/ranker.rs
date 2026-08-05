@@ -21,11 +21,12 @@ impl Ranker {
             SearchSource::Token => 0.40,
 
             // graph signals
-            SearchSource::Relationship => 0.55,
+            SearchSource::Relationship => 0.70,
 
             // metadata
-            SearchSource::Tag => 0.35,
-            SearchSource::Property => 0.30,
+            SearchSource::Tag => 0.25,
+            SearchSource::Attribute => 0.30,
+            SearchSource::AttributeValue => 0.70,
 
             // provenance
             SearchSource::Source => 0.45,

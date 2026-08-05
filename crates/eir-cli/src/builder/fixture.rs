@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use eir_core::prelude::*;
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, Serialize, Deserialize, Debug, Clone)]
-pub struct FixtureProperty {
+pub struct FixtureAttribute {
     pub key: String,
     pub value: String,
 }
@@ -15,12 +15,16 @@ pub struct FixtureEntity {
 
     pub names: Vec<EntityName>,
 
+    #[serde(default)]
     pub tags: Vec<Box<str>>,
 
-    pub properties: Vec<FixtureProperty>,
+    #[serde(default)]
+    pub attributes: Vec<FixtureAttribute>,
 
+    #[serde(default)]
     pub relationships: Vec<Relationship>,
 
+    #[serde(default)]
     pub sources: Vec<FixtureSource>,
 }
 

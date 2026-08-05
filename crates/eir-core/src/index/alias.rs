@@ -4,7 +4,10 @@ use rkyv::{Archive, Deserialize, Serialize};
 
 use std::collections::HashMap;
 
-use crate::{entity::types::EntityID, index::utils::normalize};
+use crate::{
+    entity::types::{Alias, EntityID},
+    utils::normalize,
+};
 
 #[derive(Default, Debug, Clone)]
 pub struct AliasIndex {
@@ -29,7 +32,7 @@ impl AliasIndex {
 
 #[derive(Archive, Serialize, Deserialize, CheckBytes, Debug)]
 pub struct AliasIndexRecord {
-    pub entries: HashMap<Box<str>, Vec<EntityID>>,
+    pub entries: HashMap<Alias, Vec<EntityID>>,
 }
 
 impl AliasIndex {

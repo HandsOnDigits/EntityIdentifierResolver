@@ -4,6 +4,7 @@ pub mod entity;
 pub mod error;
 pub mod index;
 pub mod storage;
+pub mod utils;
 
 pub use engine::Database;
 pub use storage::{IndexBuilder, Indexes};

@@ -5,7 +5,6 @@ mod ranker;
 mod resolver;
 mod search;
 mod trie;
-pub mod utils;
 
 pub use alias::{AliasIndex, AliasIndexRecord};
 pub use bk_tree::{BKTreeIndex, BKTreeIndexRecord};

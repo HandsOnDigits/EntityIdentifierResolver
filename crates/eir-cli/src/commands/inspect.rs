@@ -48,15 +48,15 @@ pub fn execute(args: InspectArgs) -> Result<()> {
     println!();
 
     println!("Properties:");
-    for property in entity.properties.iter() {
+    for attribute in entity.attributes.iter() {
         if args.verbose {
             println!(
-                "  {} ({})",
-                database.properties[property.to_native() as usize],
-                property
+                "  {:?}: {:?}",
+                attribute.value.display_value(),
+                attribute.key
             );
         } else {
-            println!("  {}", database.properties[property.to_native() as usize]);
+            println!("{}", attribute.value.display_value());
         }
     }
 

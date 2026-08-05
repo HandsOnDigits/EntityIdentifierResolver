@@ -4,13 +4,14 @@ use rkyv::{Archive, Deserialize, Serialize};
 
 use std::collections::HashMap;
 
-use crate::entity::types::EntityID;
-
-use super::utils::normalize;
+use crate::{
+    entity::types::{Alias, EntityID},
+    utils::normalize,
+};
 
 #[derive(Default, Debug, Clone)]
 pub struct InvertedIndex {
-    pub index: HashMap<Box<str>, Vec<EntityID>>,
+    pub index: HashMap<Alias, Vec<EntityID>>,
 }
 
 impl InvertedIndex {

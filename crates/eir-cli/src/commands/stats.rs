@@ -14,7 +14,7 @@ pub fn execute(path: std::path::PathBuf) -> anyhow::Result<()> {
     println!("Entities:    {}", database.entities.len());
     println!("Tags:        {}", database.tags.len());
     println!("Sources:     {}", database.sources.len());
-    println!("Properties:  {}", database.properties.len());
+    println!("attributes:  {}", database.attribute_keys.len());
 
     println!();
     println!("Indexes");

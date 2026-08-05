@@ -5,7 +5,7 @@ use crate::entity::{
     types::{SourceID, TagID},
 };
 
-use crate::index::{prelude::*, utils::normalize};
+use crate::{index::prelude::*, utils::normalize};
 
 use super::posting_list::{PostingList, PostingListRecord};
 

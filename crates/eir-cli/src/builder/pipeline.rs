@@ -33,7 +33,7 @@ pub fn build(
 
         tags: ctx.tags.into_inner(),
         sources: ctx.sources.into_inner(),
-        properties: ctx.properties.into_inner(),
+        attribute_keys: ctx.attribute_keys.into_inner(),
 
         alias_index: indexes.alias.to_record(),
         trie_index: indexes.trie.to_record(),

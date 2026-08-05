@@ -5,6 +5,8 @@ pub type EntityID = u64;
 
 pub type TagID = u32;
 
+use crate::utils::normalize;
+
 #[derive(
     Archive, RkyvSerialize, RkyvDeserialize, Serialize, Deserialize, PartialEq, Clone, Debug,
 )]
@@ -60,25 +62,49 @@ impl Date {
 
 pub type Alias = Box<str>;
 
-pub type PropertyID = u32;
+pub type AttributeKeyID = u32;
 
 #[derive(
     Archive, RkyvSerialize, RkyvDeserialize, Serialize, Deserialize, Debug, Clone, PartialEq,
 )]
-pub struct Property {
-    pub key: PropertyID,
+pub struct Attribute {
+    pub key: AttributeKeyID,
     pub value: Value,
+}
+
+impl ArchivedValue {
+    pub fn display_value(&self) -> String {
+        match self {
+            Self::String(value) => value.to_string(),
+            Self::Integer(value) => value.to_string(),
+            Self::Float(value) => value.to_string(),
+            Self::Boolean(value) => value.to_string(),
+            Self::Entity(value) => value.to_string(),
+        }
+    }
 }
 
 #[derive(
     Archive, RkyvSerialize, RkyvDeserialize, Serialize, Deserialize, Debug, Clone, PartialEq,
 )]
 pub enum Value {
-    String(String),
+    String(Box<str>),
     Integer(i64),
     Float(f64),
     Boolean(bool),
     Entity(EntityID),
+}
+
+impl Value {
+    pub fn normalized(&self) -> Box<str> {
+        match self {
+            Self::String(s) => normalize(s),
+            Self::Integer(i) => String::into_boxed_str(i.to_string()),
+            Self::Float(f) => String::into_boxed_str(f.to_string()),
+            Self::Boolean(b) => String::into_boxed_str(b.to_string()),
+            Self::Entity(id) => String::into_boxed_str(id.to_string()),
+        }
+    }
 }
 
 #[derive(Debug)]

@@ -24,7 +24,7 @@ pub struct Entity {
 
     pub tags: Vec<Tag>,
 
-    pub properties: Vec<Property>,
+    pub attributes: Vec<Attribute>,
 
     pub relationships: Vec<Relationship>,
 
@@ -35,11 +35,11 @@ pub struct Entity {
 pub struct EntityDocument {
     pub id: EntityID,
 
-    pub aliases: Vec<EntityName>,
+    pub aliases: Vec<Alias>,
 
     pub tags: Vec<TagID>,
 
-    pub properties: Vec<PropertyID>,
+    pub attributes: Vec<Attribute>,
 
     pub relationships: Vec<Relationship>,
 

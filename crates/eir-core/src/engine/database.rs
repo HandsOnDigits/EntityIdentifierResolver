@@ -15,7 +15,7 @@ pub struct Database {
 
     pub tags: Vec<Box<str>>,
     pub sources: Vec<Box<str>>,
-    pub properties: Vec<Box<str>>,
+    pub attribute_keys: Vec<Box<str>>,
 
     pub alias_index: AliasIndexRecord,
     pub trie_index: TrieIndexRecord,

@@ -1,6 +1,6 @@
 use crate::entity::{
     EntityDocument,
-    types::{EntityID, EntityName, PropertyID, RelationshipType, SourceID, TagID},
+    types::{Alias, EntityID, RelationshipType, SourceID, TagID},
 };
 
 use std::collections::HashSet;
@@ -20,7 +20,8 @@ pub enum SearchSource {
     FuzzyAlias,
     Token,
     Tag,
-    Property,
+    Attribute,
+    AttributeValue,
     Relationship,
     Source,
 }
@@ -28,19 +29,19 @@ pub enum SearchSource {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum SearchExplanation {
     ExactAlias {
-        alias: EntityName,
+        alias: Alias,
     },
 
     PrefixAlias {
-        alias: EntityName,
+        alias: Alias,
     },
 
     FuzzyAlias {
-        alias: EntityName,
+        alias: Alias,
     },
 
     Token {
-        token: EntityName,
+        token: Alias,
     },
 
     Relationship {
@@ -52,8 +53,8 @@ pub enum SearchExplanation {
         tag: TagID,
     },
 
-    Property {
-        property: PropertyID,
+    Attribute {
+        term: Box<str>,
     },
 
     Source {

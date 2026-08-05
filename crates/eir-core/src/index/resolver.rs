@@ -5,13 +5,14 @@ use std::collections::HashMap;
 use crate::{
     engine::Database,
     entity::EntityDocument,
-    entity::types::{EntityID, PropertyID, Relationship, SourceID, TagID},
+    entity::types::{AttributeKeyID, EntityID, Relationship, SourceID, TagID},
     storage::PostingList,
+    utils::normalize,
 };
 
 use super::{
     alias::AliasIndex, bk_tree::BKTreeIndex, inverted::InvertedIndex, ranker::Ranker,
-    trie::TrieIndex, utils::normalize,
+    trie::TrieIndex,
 };
 
 pub struct Resolver {
@@ -23,11 +24,13 @@ pub struct Resolver {
     tokens: InvertedIndex,
 
     tags: PostingList<TagID>,
-    properties: PostingList<PropertyID>,
     sources: PostingList<SourceID>,
 
+    attribute_lookup: HashMap<Box<str>, AttributeKeyID>,
+    attribute_names: Vec<Box<str>>,
+
     tag_lookup: HashMap<Box<str>, TagID>,
-    property_lookup: HashMap<Box<str>, PropertyID>,
+    attribute_index: InvertedIndex,
     source_lookup: HashMap<Box<str>, SourceID>,
 
     relationship_targets: PostingList<EntityID>,
@@ -60,8 +63,16 @@ impl Resolver {
             self.tags.insert(*tag, id);
         }
 
-        for property in &input.properties {
-            self.properties.insert(*property, id);
+        for attribute in &input.attributes {
+            let key = self
+                .attribute_names
+                .get(attribute.key as usize)
+                .map(|x| x.to_string())
+                .unwrap_or_default();
+
+            let value = attribute.value.normalized();
+
+            self.index_attribute(&key, &value, id);
         }
 
         for source in &input.sources {
@@ -79,8 +90,25 @@ impl Resolver {
         self.tag_lookup.insert(normalize(&name), id);
     }
 
-    pub fn register_property(&mut self, id: PropertyID, name: Box<str>) {
-        self.property_lookup.insert(normalize(&name), id);
+    pub fn register_attribute(&mut self, id: AttributeKeyID, name: Box<str>) {
+        self.attribute_lookup.insert(normalize(&name), id);
+    }
+
+    fn index_attribute(&mut self, key: &str, value: &str, id: EntityID) {
+        let key = normalize(key);
+        let value = normalize(value);
+
+        self.attribute_index.insert(&key, id);
+        self.attribute_index.insert(&value, id);
+        self.attribute_index.insert(&format!("{key}:{value}"), id);
+
+        for token in value.split_whitespace() {
+            self.attribute_index.insert(token, id);
+        }
+    }
+
+    pub fn attribute_search(&self, query: &str) -> Vec<EntityID> {
+        self.attribute_index.lookup(&normalize(query))
     }
 
     pub fn register_source(&mut self, id: SourceID, name: Box<str>) {
@@ -121,10 +149,12 @@ impl Resolver {
     pub fn related_to_target(&self, target: EntityID) -> Vec<(EntityID, &Relationship)> {
         let mut out = Vec::new();
 
-        for (entity_id, doc) in &self.documents {
+        for source_id in self.relationship_targets.lookup(target) {
+            let doc = &self.documents[&source_id];
+
             for relationship in &doc.relationships {
                 if relationship.target == target {
-                    out.push((*entity_id, relationship));
+                    out.push((source_id, relationship));
                 }
             }
         }
@@ -148,16 +178,14 @@ impl Resolver {
             }
         }
 
-        if let Some(property_id) = self.property_search(&query) {
-            for id in self.properties.lookup(property_id) {
-                candidates.push((
-                    id,
-                    SearchSource::Property,
-                    SearchExplanation::Property {
-                        property: property_id,
-                    },
-                ));
-            }
+        for id in self.attribute_search(&query) {
+            candidates.push((
+                id,
+                SearchSource::Attribute,
+                SearchExplanation::Attribute {
+                    term: query.clone(),
+                },
+            ));
         }
 
         // Relationship matches
@@ -246,12 +274,6 @@ impl Resolver {
         self.tag_lookup.get(key.as_ref()).copied()
     }
 
-    pub fn property_search(&self, property: &str) -> Option<PropertyID> {
-        let key = normalize(property);
-
-        self.property_lookup.get(key.as_ref()).copied()
-    }
-
     pub fn source_search(&self, source: &str) -> Option<SourceID> {
         let key = normalize(source);
 
@@ -261,12 +283,18 @@ impl Resolver {
     pub fn from_database(database: &Database) -> Self {
         let mut resolver = Self::new();
 
-        for (id, tag) in database.tags.iter().enumerate() {
-            resolver.register_tag(id as TagID, tag.clone());
+        resolver.attribute_names = database
+            .attribute_keys
+            .iter()
+            .map(|id| id.to_string().into_boxed_str())
+            .collect();
+
+        for (id, key) in database.attribute_keys.iter().enumerate() {
+            resolver.register_attribute(id as AttributeKeyID, key.clone());
         }
 
-        for (id, property) in database.properties.iter().enumerate() {
-            resolver.register_property(id as PropertyID, property.clone());
+        for (id, tag) in database.tags.iter().enumerate() {
+            resolver.register_tag(id as TagID, tag.clone());
         }
 
         for (id, source) in database.sources.iter().enumerate() {
@@ -292,11 +320,13 @@ impl Default for Resolver {
             tokens: InvertedIndex::default(),
 
             tags: PostingList::<TagID>::default(),
-            properties: PostingList::<PropertyID>::default(),
             sources: PostingList::<SourceID>::default(),
 
+            attribute_lookup: HashMap::new(),
+            attribute_names: Vec::new(),
+
             tag_lookup: HashMap::new(),
-            property_lookup: HashMap::new(),
+            attribute_index: InvertedIndex::default(),
             source_lookup: HashMap::new(),
 
             relationship_targets: PostingList::<EntityID>::default(),
