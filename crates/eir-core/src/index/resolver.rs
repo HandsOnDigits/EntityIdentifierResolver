@@ -8,8 +8,8 @@ use crate::{
 };
 
 use super::{
-    alias::AliasIndex, bk_tree::BKTreeIndex, inverted::InvertedIndex, trie::TrieIndex,
-    utils::normalize,
+    alias::AliasIndex, bk_tree::BKTreeIndex, inverted::InvertedIndex, ranker::Ranker,
+    trie::TrieIndex, utils::normalize,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -28,10 +28,9 @@ pub enum SearchSource {
 pub struct SearchResult<'a> {
     pub entity: &'a EntityDocument,
     pub score: f32,
-    pub source: SearchSource,
+    pub sources: Vec<SearchSource>,
 }
 
-#[derive(Debug)]
 pub struct Resolver {
     documents: HashMap<EntityID, EntityDocument>,
 
@@ -49,6 +48,8 @@ pub struct Resolver {
     source_lookup: HashMap<Box<str>, SourceID>,
 
     relationship_targets: PostingList<EntityID>,
+
+    ranker: Ranker,
 }
 
 impl Resolver {
@@ -133,74 +134,39 @@ impl Resolver {
 
     /// High-level search.
     pub fn search<'a>(&'a self, query: &str) -> Vec<SearchResult<'a>> {
-        #[derive(Debug, Clone, Copy)]
-        struct Hit {
-            score: f32,
-            source: SearchSource,
+        let query = normalize(query);
+
+        let mut candidates = Vec::new();
+
+        for &id in self.resolve(&query) {
+            candidates.push((id, 1.0, SearchSource::ExactAlias));
         }
 
-        let mut merged: HashMap<EntityID, Hit> = HashMap::new();
-
-        let mut add_hit = |id: EntityID, score: f32, source: SearchSource| {
-            merged
-                .entry(id)
-                .and_modify(|existing| {
-                    if score > existing.score {
-                        *existing = Hit { score, source };
-                    }
-                })
-                .or_insert(Hit { score, source });
-        };
-
-        for id in self.resolve(query) {
-            add_hit(*id, 1.0, SearchSource::ExactAlias);
-
-            for related in self.related_by_target(*id) {
-                add_hit(related, 0.7, SearchSource::Relationship);
-            }
+        for id in self.prefix(&query) {
+            candidates.push((id, 0.8, SearchSource::PrefixAlias));
         }
 
-        for id in self.prefix(query) {
-            add_hit(id, 0.8, SearchSource::PrefixAlias);
-
-            for related in self.related_by_target(id) {
-                add_hit(related, 0.6, SearchSource::Relationship);
-            }
+        for id in self.fuzzy(&query, 1) {
+            candidates.push((id, 0.6, SearchSource::FuzzyAlias));
         }
 
-        for id in self.fuzzy(query, 1) {
-            add_hit(id, 0.6, SearchSource::FuzzyAlias);
+        for id in self.lookup(&query) {
+            candidates.push((id, 0.5, SearchSource::Token));
         }
 
-        for id in self.lookup(query) {
-            add_hit(id, 0.5, SearchSource::Token);
-        }
-
-        for id in self.tag_search(query) {
-            add_hit(id, 0.4, SearchSource::Tag);
-        }
-
-        for id in self.property_search(query) {
-            add_hit(id, 0.3, SearchSource::Property);
-        }
-
-        for id in self.source_search(query) {
-            add_hit(id, 0.2, SearchSource::Source);
-        }
-
-        let mut results: Vec<SearchResult<'a>> = merged
+        self.ranker
+            .rank(candidates)
             .into_iter()
-            .filter_map(|(id, hit)| {
-                self.documents.get(&id).map(|entity| SearchResult {
-                    entity,
-                    score: hit.score,
-                    source: hit.source,
-                })
+            .filter_map(|hit| {
+                self.documents
+                    .get(&hit.entity_id)
+                    .map(|entity| SearchResult {
+                        entity,
+                        score: hit.score,
+                        sources: hit.sources,
+                    })
             })
-            .collect();
-
-        results.sort_by(|a, b| b.score.total_cmp(&a.score));
-        results
+            .collect()
     }
 
     pub fn tag_search(&self, tag: &str) -> Vec<EntityID> {
@@ -272,6 +238,8 @@ impl Default for Resolver {
             source_lookup: HashMap::new(),
 
             relationship_targets: PostingList::<EntityID>::default(),
+
+            ranker: Ranker::default(),
         }
     }
 }
