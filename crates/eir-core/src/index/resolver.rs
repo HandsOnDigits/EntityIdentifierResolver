@@ -1,3 +1,5 @@
+use super::search::{SearchResult, SearchSource};
+
 use std::collections::HashMap;
 
 use crate::{
@@ -11,25 +13,6 @@ use super::{
     alias::AliasIndex, bk_tree::BKTreeIndex, inverted::InvertedIndex, ranker::Ranker,
     trie::TrieIndex, utils::normalize,
 };
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SearchSource {
-    ExactAlias,
-    PrefixAlias,
-    FuzzyAlias,
-    Token,
-    Tag,
-    Property,
-    Relationship,
-    Source,
-}
-
-#[derive(Debug, Clone)]
-pub struct SearchResult<'a> {
-    pub entity: &'a EntityDocument,
-    pub score: f32,
-    pub sources: Vec<SearchSource>,
-}
 
 pub struct Resolver {
     documents: HashMap<EntityID, EntityDocument>,
@@ -136,22 +119,22 @@ impl Resolver {
     pub fn search<'a>(&'a self, query: &str) -> Vec<SearchResult<'a>> {
         let query = normalize(query);
 
-        let mut candidates = Vec::new();
+        let mut candidates = Vec::<(EntityID, SearchSource)>::new();
 
         for &id in self.resolve(&query) {
-            candidates.push((id, 1.0, SearchSource::ExactAlias));
+            candidates.push((id, SearchSource::ExactAlias));
         }
 
         for id in self.prefix(&query) {
-            candidates.push((id, 0.8, SearchSource::PrefixAlias));
+            candidates.push((id, SearchSource::PrefixAlias));
         }
 
         for id in self.fuzzy(&query, 1) {
-            candidates.push((id, 0.6, SearchSource::FuzzyAlias));
+            candidates.push((id, SearchSource::FuzzyAlias));
         }
 
         for id in self.lookup(&query) {
-            candidates.push((id, 0.5, SearchSource::Token));
+            candidates.push((id, SearchSource::Token));
         }
 
         self.ranker
