@@ -6,7 +6,7 @@
 
 The CLI provides tools for building entity databases, inspecting stored entities, generating datasets, managing indexes, and testing the EIR search engine.
 
-EIR is designed around local entity resolution: resolving names, aliases, tags, properties, sources, and relationships into known entities.
+EIR is designed around local entity resolution: resolving names, aliases, tags, attributes, sources, and relationships into known entities.
 
 ---
 
@@ -76,7 +76,7 @@ The database contains:
 - Entities
 - Aliases
 - Tags
-- Properties
+- Attributes
 - Relationships
 - Sources
 - Search indexes
@@ -104,7 +104,7 @@ Example output:
 ```text
 Entities: 30
 Tags: 42
-Properties: 8
+Attributes: 8
 Sources: 3
 Relationships: 25
 ```
@@ -144,7 +144,7 @@ Tags:
   sweet
   food
 
-Properties:
+Attributes:
   volume
 
 Relationships:
