@@ -90,7 +90,7 @@ Search supports:
 * Fuzzy matching
 * Token search
 * Tags
-* Properties
+* Attributes
 * Sources
 * Relationships
 
