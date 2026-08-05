@@ -35,10 +35,19 @@ pub fn execute(args: SearchArgs) -> Result<()> {
             .map(|s| s.as_ref())
             .unwrap_or("Unknown");
 
-        println!(
-            "{}  score={:.2}  via={:?}",
-            name, result.score, result.sources
-        );
+        println!("{} score={:.2}", name, result.score);
+
+        println!("  Signals:");
+        for source in &result.sources {
+            println!("    {:?}", source);
+        }
+
+        println!("  Why:");
+        for explanation in &result.explanations {
+            println!("    {:?}", explanation);
+        }
+
+        println!();
     }
 
     Ok(())
