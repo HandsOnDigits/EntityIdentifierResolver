@@ -15,6 +15,11 @@ use super::{
     trie::TrieIndex,
 };
 
+pub struct AttributeQuery<'a> {
+    pub key: &'a str,
+    pub value: &'a str,
+}
+
 pub struct Resolver {
     documents: HashMap<EntityID, EntityDocument>,
 
@@ -28,9 +33,9 @@ pub struct Resolver {
 
     attribute_lookup: HashMap<Box<str>, AttributeKeyID>,
     attribute_names: Vec<Box<str>>,
+    attribute_index: InvertedIndex,
 
     tag_lookup: HashMap<Box<str>, TagID>,
-    attribute_index: InvertedIndex,
     source_lookup: HashMap<Box<str>, SourceID>,
 
     relationship_targets: PostingList<EntityID>,
@@ -99,12 +104,26 @@ impl Resolver {
         let value = normalize(value);
 
         self.attribute_index.insert(&key, id);
+
         self.attribute_index.insert(&value, id);
+
         self.attribute_index.insert(&format!("{key}:{value}"), id);
 
         for token in value.split_whitespace() {
             self.attribute_index.insert(token, id);
         }
+    }
+
+    pub fn parse_attribute_query(query: &str) -> Option<AttributeQuery<'_>> {
+        let (key, value) = query.split_once(':')?;
+
+        Some(AttributeQuery { key, value })
+    }
+
+    pub fn attribute_value_search(&self, key: &str, value: &str) -> Vec<EntityID> {
+        let query = format!("{}:{}", normalize(key), normalize(value));
+
+        self.attribute_index.lookup(&query)
     }
 
     pub fn attribute_search(&self, query: &str) -> Vec<EntityID> {
@@ -163,8 +182,10 @@ impl Resolver {
     }
 
     /// High-level search.
-    pub fn search<'a>(&'a self, query: &str) -> Vec<SearchResult<'a>> {
-        let query = normalize(query);
+    pub fn search<'a>(&'a self, raw_query: &str) -> Vec<SearchResult<'a>> {
+        let attribute = Self::parse_attribute_query(raw_query);
+
+        let query = normalize(raw_query);
 
         let mut candidates: Vec<(EntityID, SearchSource, SearchExplanation)> = Vec::new();
 
@@ -178,14 +199,17 @@ impl Resolver {
             }
         }
 
-        for id in self.attribute_search(&query) {
-            candidates.push((
-                id,
-                SearchSource::Attribute,
-                SearchExplanation::Attribute {
-                    term: query.clone(),
-                },
-            ));
+        // Attribute key search
+        if let Some(attribute) = attribute {
+            for id in self.attribute_value_search(attribute.key, attribute.value) {
+                candidates.push((
+                    id,
+                    SearchSource::Attribute,
+                    SearchExplanation::Attribute {
+                        term: query.clone(),
+                    },
+                ));
+            }
         }
 
         // Relationship matches
@@ -283,6 +307,10 @@ impl Resolver {
     pub fn from_database(database: &Database) -> Self {
         let mut resolver = Self::new();
 
+        for entity in &database.entities {
+            resolver.add(entity.clone());
+        }
+
         resolver.attribute_names = database.attribute_keys.clone();
 
         for (id, key) in database.attribute_keys.iter().enumerate() {
@@ -295,10 +323,6 @@ impl Resolver {
 
         for (id, source) in database.sources.iter().enumerate() {
             resolver.register_source(id as SourceID, source.clone());
-        }
-
-        for entity in &database.entities {
-            resolver.add(entity.clone());
         }
 
         resolver
@@ -320,9 +344,9 @@ impl Default for Resolver {
 
             attribute_lookup: HashMap::new(),
             attribute_names: Vec::new(),
+            attribute_index: InvertedIndex::default(),
 
             tag_lookup: HashMap::new(),
-            attribute_index: InvertedIndex::default(),
             source_lookup: HashMap::new(),
 
             relationship_targets: PostingList::<EntityID>::default(),
