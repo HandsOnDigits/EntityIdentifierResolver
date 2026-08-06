@@ -1,13 +1,26 @@
 use super::Query;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum QueryIntent {
-    Lookup,
-    Browse,
-    Filter,
-    Relationship,
-    Similar,
     Unknown,
+
+    /// Normal entity lookup
+    Lookup,
+
+    /// Browse categories/tags
+    Browse,
+
+    /// Find similar entities
+    Similar,
+
+    /// key:value filtering
+    Filter,
+
+    /// Relationship queries
+    Relationship,
+
+    /// Explicit tag queries
+    Tag,
 }
 
 pub fn detect_intent(query: &Query) -> QueryIntent {
