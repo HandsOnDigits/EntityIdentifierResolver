@@ -9,5 +9,5 @@ pub mod wal;
 pub use backend::Backend;
 pub use indexes::{IndexBuilder, Indexes};
 pub use posting_list::{PostingList, PostingListRecord};
-pub use registry::Registry;
+pub use registry::{Registry, RegistryRecord};
 pub use store::Store;
