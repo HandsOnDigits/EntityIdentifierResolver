@@ -10,3 +10,41 @@ pub enum Filter {
 
     EntityType { kind: Box<str> },
 }
+
+pub fn parse_filters(query: &str) -> Vec<Filter> {
+    let mut filters = Vec::new();
+
+    for part in query.split_whitespace() {
+        let Some((key, value)) = part.split_once(':') else {
+            continue;
+        };
+
+        match key {
+            "tag" => {
+                filters.push(Filter::Tag { tag: value.into() });
+            }
+
+            "source" => {
+                filters.push(Filter::Source {
+                    source: value.into(),
+                });
+            }
+
+            "relation" => {
+                filters.push(Filter::Relationship {
+                    kind: "related".into(),
+                    target: value.into(),
+                });
+            }
+
+            _ => {
+                filters.push(Filter::Attribute {
+                    key: key.into(),
+                    value: value.into(),
+                });
+            }
+        }
+    }
+
+    filters
+}
