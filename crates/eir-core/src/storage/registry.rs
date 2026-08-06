@@ -1,7 +1,7 @@
 use bytecheck::CheckBytes;
 use rkyv::{Archive, Deserialize, Serialize};
 
-use std::{collections::HashMap, ops::Index};
+use std::{collections::HashMap, marker::PhantomData, ops::Index};
 
 use crate::utils::normalize;
 
@@ -100,18 +100,21 @@ impl<ID: RegistryID> Index<ID> for Registry<ID> {
 }
 
 #[derive(Debug, Clone, Archive, Serialize, Deserialize, CheckBytes)]
-pub struct RegistryRecord {
+pub struct RegistryRecord<ID> {
     pub values: Vec<Box<str>>,
+    #[rkyv(with = rkyv::with::Skip)]
+    pub _phantom: PhantomData<ID>,
 }
 
 impl<ID: RegistryID> Registry<ID> {
-    pub fn to_record(&self) -> RegistryRecord {
-        RegistryRecord {
+    pub fn to_record(&self) -> RegistryRecord<ID> {
+        RegistryRecord::<ID> {
             values: self.values.clone(),
+            _phantom: PhantomData,
         }
     }
 
-    pub fn from_record(record: RegistryRecord) -> Self {
+    pub fn from_record(record: RegistryRecord<ID>) -> Self {
         let mut registry = Self::default();
 
         for value in record.values {
