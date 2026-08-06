@@ -167,8 +167,8 @@ pub enum RelationshipType {
     Archive, RkyvSerialize, RkyvDeserialize, Serialize, Deserialize, Debug, Clone, PartialEq, Eq,
 )]
 pub struct Relationship {
-    pub target: EntityID,
     pub kind: RelationshipType,
+    pub target: EntityID,
 }
 
 pub struct EntityIndexEntry {
