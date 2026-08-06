@@ -1,11 +1,15 @@
 mod candidate;
 mod context;
 mod executor;
+mod operators;
 mod pipeline;
 mod planner;
 mod ranker;
 pub mod result;
 mod signal;
+
+#[cfg(test)]
+pub mod test_utils;
 
 pub use candidate::CandidateSet;
 pub use executor::SearchExecutor;

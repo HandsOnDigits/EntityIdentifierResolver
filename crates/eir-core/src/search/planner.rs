@@ -7,7 +7,7 @@ pub enum SearchStage {
     FuzzyAlias { distance: usize },
     Token,
     Tag,
-    Property,
+    Attribute,
     Relationship,
 }
 
@@ -27,11 +27,11 @@ impl SearchPlan {
 
             QueryIntent::Browse => vec![SearchStage::Tag, SearchStage::Token],
 
-            QueryIntent::Filter => vec![SearchStage::Property, SearchStage::Tag],
+            QueryIntent::Filter => vec![SearchStage::Attribute, SearchStage::Tag],
 
             QueryIntent::Relationship => vec![SearchStage::Relationship, SearchStage::Token],
 
-            QueryIntent::Similar => vec![SearchStage::Tag, SearchStage::Property],
+            QueryIntent::Similar => vec![SearchStage::Tag, SearchStage::Attribute],
 
             QueryIntent::Unknown => vec![SearchStage::Token],
         };

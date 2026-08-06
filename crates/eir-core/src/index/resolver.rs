@@ -158,6 +158,21 @@ impl Resolver {
             .unwrap_or_default()
     }
 
+    pub fn entities_related_to(&self, target: EntityID) -> Vec<(EntityID, &Relationship)> {
+        self.related_to_target(target)
+    }
+
+    pub fn entities_with_tag(&self, tag: TagID) -> Vec<EntityID> {
+        self.tags.lookup(tag)
+    }
+
+    pub fn attribute_lookup(&self, key: &str, value: &str) -> Vec<EntityID> {
+        let key = normalize(key);
+        let value = normalize(value);
+
+        self.attribute_pairs.lookup(&format!("{key}:{value}"))
+    }
+
     pub fn related_to_target(&self, target: EntityID) -> Vec<(EntityID, &Relationship)> {
         let mut out = Vec::new();
 
