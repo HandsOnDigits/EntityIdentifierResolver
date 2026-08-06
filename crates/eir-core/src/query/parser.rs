@@ -1,31 +1,51 @@
 use crate::utils::normalize;
 
-use super::{Filter, Query, QueryIntent};
+use super::{Query, QueryIntent};
 
 impl Query {
     pub fn parse(input: &str) -> Self {
         let normalized = normalize(input);
 
-        let mut tokens = Vec::new();
-        let mut filters = Vec::new();
+        let tokens = normalized.split_whitespace().map(|x| x.into()).collect();
 
-        for part in normalized.split_whitespace() {
-            if let Some((key, value)) = part.split_once(':') {
-                filters.push(Filter::Attribute {
-                    key: key.into(),
-                    value: value.into(),
-                });
-            } else {
-                tokens.push(part.into());
-            }
-        }
+        let filters = super::filters::parse_filters(&normalized);
+
+        let intent = if !filters.is_empty() {
+            QueryIntent::Filter
+        } else {
+            QueryIntent::Lookup
+        };
 
         Self {
             original: input.into(),
             normalized,
             tokens,
-            intent: QueryIntent::Unknown,
+            intent,
             filters,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::query::QueryIntent;
+
+    #[test]
+    fn normal_query_is_lookup() {
+        let query = Query::parse("FizzBerry Spark");
+
+        assert_eq!(query.intent, QueryIntent::Lookup);
+
+        assert!(query.filters.is_empty());
+    }
+
+    #[test]
+    fn attribute_query_creates_filter() {
+        let query = Query::parse("brand:coca");
+
+        assert_eq!(query.intent, QueryIntent::Filter);
+
+        assert_eq!(query.filters.len(), 1);
     }
 }
