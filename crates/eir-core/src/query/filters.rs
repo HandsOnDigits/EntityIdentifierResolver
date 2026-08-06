@@ -15,34 +15,22 @@ pub fn parse_filters(query: &str) -> Vec<Filter> {
     let mut filters = Vec::new();
 
     for part in query.split_whitespace() {
-        let Some((key, value)) = part.split_once(':') else {
+        let parts: Vec<&str> = part.split(':').collect();
+
+        if parts.len() == 3 && parts[0] == "relation" {
+            filters.push(Filter::Relationship {
+                kind: parts[1].into(),
+                target: parts[2].into(),
+            });
+
             continue;
-        };
+        }
 
-        match key {
-            "tag" => {
-                filters.push(Filter::Tag { tag: value.into() });
-            }
-
-            "source" => {
-                filters.push(Filter::Source {
-                    source: value.into(),
-                });
-            }
-
-            "relation" => {
-                filters.push(Filter::Relationship {
-                    kind: "related".into(),
-                    target: value.into(),
-                });
-            }
-
-            _ => {
-                filters.push(Filter::Attribute {
-                    key: key.into(),
-                    value: value.into(),
-                });
-            }
+        if let Some((key, value)) = part.split_once(':') {
+            filters.push(Filter::Attribute {
+                key: key.into(),
+                value: value.into(),
+            });
         }
     }
 
