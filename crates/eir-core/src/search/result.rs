@@ -1,6 +1,6 @@
 use crate::entity::{
     EntityDocument,
-    types::{Alias, EntityID, RelationshipType, SourceID, TagID},
+    types::{Alias, EntityID, RelationshipTypeID, SourceID, TagID},
 };
 
 use std::collections::HashSet;
@@ -49,7 +49,7 @@ pub enum SearchExplanation {
     },
 
     Relationship {
-        kind: RelationshipType,
+        kind: RelationshipTypeID,
         target: EntityID,
     },
 
