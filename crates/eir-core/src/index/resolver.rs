@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use crate::{
     engine::Database,
     entity::EntityDocument,
-    entity::types::{AttributeKeyID, EntityID, Relationship, SourceID, TagID},
+    entity::types::{AttributeKeyID, EntityID, Relationship, RelationshipTypeID, SourceID, TagID},
     storage::PostingList,
     utils::normalize,
 };
@@ -42,6 +42,7 @@ pub struct Resolver {
     source_lookup: HashMap<Box<str>, SourceID>,
 
     relationship_targets: PostingList<EntityID>,
+    relationship_types: PostingList<RelationshipTypeID>,
 
     ranker: Ranker,
 }
@@ -149,6 +150,22 @@ impl Resolver {
     /// Token lookup.
     pub fn lookup(&self, term: &str) -> Vec<EntityID> {
         self.tokens.lookup(&normalize(term))
+    }
+
+    pub fn relationship_lookup(&self, kind: &str, target: &str) -> Vec<EntityID> {
+        let target_ids = self.resolve(target);
+
+        let mut results = Vec::new();
+
+        for target_id in target_ids {
+            for (entity, relationship) in self.related_to_target(*target_id) {
+                if relationship.kind == kind {
+                    results.push(entity);
+                }
+            }
+        }
+
+        results
     }
 
     pub fn relationships_for(&self, entity: EntityID) -> Vec<&Relationship> {
@@ -384,6 +401,7 @@ impl Resolver {
                 .collect(),
 
             relationship_targets: PostingList::from_archive(database.relationship_index.clone()),
+            relationship_types: PostingList::from_archive(database.relationship_types.clone()),
 
             ranker: Ranker::default(),
         }
@@ -414,6 +432,7 @@ impl Default for Resolver {
             source_lookup: HashMap::new(),
 
             relationship_targets: PostingList::<EntityID>::default(),
+            relationship_types: PostingList::<RelationshipTypeID>::default(),
 
             ranker: Ranker::default(),
         }

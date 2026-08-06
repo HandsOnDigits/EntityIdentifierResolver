@@ -119,6 +119,32 @@ impl From<std::io::Error> for EntityError {
     }
 }
 
+pub type RelationshipTypeID = u16;
+
+#[derive(
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+    Serialize,
+    Deserialize,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+)]
+pub enum BuiltInRelationship {
+    IsA,
+    InstanceOf,
+    PartOf,
+    MadeBy,
+    OwnedBy,
+    LocatedIn,
+    SimilarTo,
+    ReplacedBy,
+}
+
 #[derive(
     Archive,
     RkyvSerialize,
@@ -133,29 +159,8 @@ impl From<std::io::Error> for EntityError {
     Hash,
 )]
 pub enum RelationshipType {
-    IsA,
-    InstanceOf,
-    PartOf,
-    MadeBy,
-    OwnedBy,
-    LocatedIn,
-    SimilarTo,
-    ReplacedBy,
-}
-
-impl ArchivedRelationshipType {
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            Self::IsA => "IsA",
-            Self::InstanceOf => "InstanceOf",
-            Self::PartOf => "PartOf",
-            Self::MadeBy => "MadeBy",
-            Self::OwnedBy => "OwnedBy",
-            Self::LocatedIn => "LocatedIn",
-            Self::SimilarTo => "SimilarTo",
-            Self::ReplacedBy => "ReplacedBy",
-        }
-    }
+    BuiltIn(BuiltInRelationship),
+    Custom(RelationshipTypeID),
 }
 
 #[derive(

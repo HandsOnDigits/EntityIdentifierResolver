@@ -38,6 +38,7 @@ pub fn build(
         tag_index: indexes.tags.to_record(),
         source_index: indexes.sources.to_record(),
         relationship_index: indexes.relationships.to_record(),
+        relationship_types: indexes.relationships_type.to_record(),
     };
 
     write_database(database, output)?;

@@ -1,8 +1,20 @@
+use crate::utils::normalize;
+
 use std::{collections::HashMap, ops::Index};
 
 pub trait RegistryID: Copy {
     fn from_index(index: usize) -> Self;
     fn index(self) -> usize;
+}
+
+impl RegistryID for u16 {
+    fn from_index(index: usize) -> Self {
+        index as u16
+    }
+
+    fn index(self) -> usize {
+        self as usize
+    }
 }
 
 impl RegistryID for u32 {
@@ -33,13 +45,13 @@ pub struct Registry<ID: RegistryID> {
 
 impl<ID: RegistryID> Registry<ID> {
     pub fn intern(&mut self, value: &str) -> ID {
-        if let Some(id) = self.lookup.get(value) {
+        let value = normalize(value);
+
+        if let Some(id) = self.lookup.get(value.as_ref()) {
             return *id;
         }
 
         let id = ID::from_index(self.values.len());
-
-        let value: Box<str> = value.into();
 
         self.values.push(value.clone());
         self.lookup.insert(value, id);

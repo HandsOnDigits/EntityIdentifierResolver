@@ -2,7 +2,7 @@ use rkyv::{Archive, Deserialize, Serialize};
 
 use crate::entity::{
     EntityDocument,
-    types::{EntityID, SourceID, TagID},
+    types::{EntityID, RelationshipTypeID, SourceID, TagID},
 };
 
 use crate::{index::prelude::*, utils::normalize};
@@ -24,6 +24,7 @@ pub struct Indexes {
     pub attribute_pairs: InvertedIndex,
 
     pub relationships: PostingList<EntityID>,
+    pub relationships_type: PostingList<RelationshipTypeID>,
 }
 
 #[derive(Archive, Serialize, Deserialize, Debug)]
