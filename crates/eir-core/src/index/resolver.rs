@@ -9,7 +9,7 @@ use crate::{
     engine::Database,
     entity::EntityDocument,
     entity::types::{AttributeKeyID, EntityID, Relationship, RelationshipTypeID, SourceID, TagID},
-    storage::PostingList,
+    storage::{PostingList, Registry},
     utils::normalize,
 };
 
@@ -42,7 +42,7 @@ pub struct Resolver {
     source_lookup: HashMap<Box<str>, SourceID>,
 
     relationship_targets: PostingList<EntityID>,
-    relationship_types: PostingList<RelationshipTypeID>,
+    relationship_types: Registry<RelationshipTypeID>,
 
     ranker: Ranker,
 }
@@ -152,20 +152,22 @@ impl Resolver {
         self.tokens.lookup(&normalize(term))
     }
 
-    pub fn relationship_lookup(&self, kind: &str, target: &str) -> Vec<EntityID> {
-        let target_ids = self.resolve(target);
+    pub fn relationships_by_kind(
+        &self,
+        entity: EntityID,
+        kind: RelationshipTypeID,
+    ) -> Vec<(EntityID, &Relationship)> {
+        let mut result = Vec::new();
 
-        let mut results = Vec::new();
-
-        for target_id in target_ids {
-            for (entity, relationship) in self.related_to_target(*target_id) {
+        if let Some(doc) = self.documents.get(&entity) {
+            for relationship in &doc.relationships {
                 if relationship.kind == kind {
-                    results.push(entity);
+                    result.push((relationship.target, relationship));
                 }
             }
         }
 
-        results
+        result
     }
 
     pub fn relationships_for(&self, entity: EntityID) -> Vec<&Relationship> {
@@ -173,6 +175,14 @@ impl Resolver {
             .get(&entity)
             .map(|doc| doc.relationships.iter().collect())
             .unwrap_or_default()
+    }
+
+    pub fn register_relationship_type(&mut self, name: &str) -> RelationshipTypeID {
+        self.relationship_types.intern(name)
+    }
+
+    pub fn relationship_type_id(&self, name: &str) -> Option<RelationshipTypeID> {
+        self.relationship_types.id(name)
     }
 
     pub fn entities_related_to(&self, target: EntityID) -> Vec<(EntityID, &Relationship)> {
@@ -188,6 +198,20 @@ impl Resolver {
         let value = normalize(value);
 
         self.attribute_pairs.lookup(&format!("{key}:{value}"))
+    }
+
+    pub fn relationship_lookup(&self, kind: RelationshipTypeID, target: EntityID) -> Vec<EntityID> {
+        let mut result = Vec::new();
+
+        for (id, document) in &self.documents {
+            for relationship in &document.relationships {
+                if relationship.kind == kind && relationship.target == target {
+                    result.push(*id);
+                }
+            }
+        }
+
+        result
     }
 
     pub fn related_to_target(&self, target: EntityID) -> Vec<(EntityID, &Relationship)> {
@@ -231,7 +255,7 @@ impl Resolver {
                     entity_id,
                     SearchSource::Relationship,
                     SearchExplanation::Relationship {
-                        kind: relationship.kind.clone(),
+                        kind: relationship.kind,
                         target,
                     },
                 ));
@@ -401,7 +425,7 @@ impl Resolver {
                 .collect(),
 
             relationship_targets: PostingList::from_archive(database.relationship_index.clone()),
-            relationship_types: PostingList::from_archive(database.relationship_types.clone()),
+            relationship_types: Registry::from_record(database.relationship_types.clone()),
 
             ranker: Ranker::default(),
         }
@@ -432,7 +456,7 @@ impl Default for Resolver {
             source_lookup: HashMap::new(),
 
             relationship_targets: PostingList::<EntityID>::default(),
-            relationship_types: PostingList::<RelationshipTypeID>::default(),
+            relationship_types: Registry::<RelationshipTypeID>::default(),
 
             ranker: Ranker::default(),
         }
