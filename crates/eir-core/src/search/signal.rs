@@ -2,8 +2,8 @@
 pub enum Signal {
     ExactAlias,
     PrefixAlias,
-    FuzzyAlias { distance: u8 },
-    Token { matches: u16 },
+    FuzzyAlias,
+    Token,
     Tag,
     Property,
     Relationship,
