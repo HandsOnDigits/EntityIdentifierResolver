@@ -1,31 +1,15 @@
 use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
 use serde::{Deserialize, Serialize}; // Bring serde traits into scope
 
+use crate::utils::normalize;
+
 pub type EntityID = u64;
 
 pub type TagID = u32;
 
-use crate::utils::normalize;
-
-#[derive(
-    Archive, RkyvSerialize, RkyvDeserialize, Serialize, Deserialize, PartialEq, Clone, Debug,
-)]
-pub struct Tag {
-    pub id: TagID,
-    pub name: String,
-}
-
 pub type SourceID = u32;
 
-#[derive(
-    Archive, RkyvSerialize, RkyvDeserialize, Serialize, Deserialize, PartialEq, Clone, Debug,
-)]
-pub struct Source {
-    pub id: SourceID,
-    pub name: String,
-}
-
-pub type EntityName = Box<str>;
+pub type RelationshipTypeID = u16;
 
 #[derive(
     Archive,
@@ -41,6 +25,24 @@ pub type EntityName = Box<str>;
     Debug,
 )]
 pub struct Date(pub i64);
+
+pub type EntityName = Box<str>;
+
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, Serialize, Deserialize, PartialEq, Clone, Debug,
+)]
+pub struct Tag {
+    pub id: TagID,
+    pub name: String,
+}
+
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, Serialize, Deserialize, PartialEq, Clone, Debug,
+)]
+pub struct Source {
+    pub id: SourceID,
+    pub name: String,
+}
 
 impl Date {
     pub fn now() -> Self {
@@ -119,8 +121,6 @@ impl From<std::io::Error> for EntityError {
     }
 }
 
-pub type RelationshipTypeID = u16;
-
 #[derive(
     Archive,
     RkyvSerialize,
@@ -167,7 +167,7 @@ pub enum RelationshipType {
     Archive, RkyvSerialize, RkyvDeserialize, Serialize, Deserialize, Debug, Clone, PartialEq, Eq,
 )]
 pub struct Relationship {
-    pub kind: RelationshipType,
+    pub kind: RelationshipTypeID,
     pub target: EntityID,
 }
 
