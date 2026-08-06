@@ -1,7 +1,17 @@
 use std::collections::{HashMap, HashSet};
 
-use super::search::{SearchExplanation, SearchHit, SearchSource};
-use crate::entity::types::EntityID;
+use crate::{
+    entity::types::EntityID,
+    search::result::{SearchExplanation, SearchHit, SearchSource},
+};
+
+use super::signal::SignalSet;
+
+pub struct RankedCandidate {
+    pub entity: EntityID,
+    pub score: f32,
+    pub signals: SignalSet,
+}
 
 #[derive(Default)]
 pub struct Ranker;

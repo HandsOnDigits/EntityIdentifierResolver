@@ -3,6 +3,8 @@ pub mod engine;
 pub mod entity;
 pub mod error;
 pub mod index;
+pub mod query;
+pub mod search;
 pub mod storage;
 pub mod utils;
 

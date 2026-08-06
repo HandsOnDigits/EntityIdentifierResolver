@@ -1,4 +1,4 @@
-use crate::index::SearchResult;
+use crate::search::result::SearchResult;
 
 use super::Engine;
 

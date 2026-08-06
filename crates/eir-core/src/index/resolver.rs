@@ -1,4 +1,7 @@
-use super::search::{SearchExplanation, SearchResult, SearchSource};
+use crate::search::{
+    Ranker,
+    result::{SearchExplanation, SearchResult, SearchSource},
+};
 
 use std::collections::HashMap;
 
@@ -10,10 +13,7 @@ use crate::{
     utils::normalize,
 };
 
-use super::{
-    alias::AliasIndex, bk_tree::BKTreeIndex, inverted::InvertedIndex, ranker::Ranker,
-    trie::TrieIndex,
-};
+use super::{alias::AliasIndex, bk_tree::BKTreeIndex, inverted::InvertedIndex, trie::TrieIndex};
 
 pub struct AttributeQuery<'a> {
     pub key: &'a str,
