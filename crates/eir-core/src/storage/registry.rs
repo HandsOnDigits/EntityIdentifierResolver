@@ -1,6 +1,9 @@
-use crate::utils::normalize;
+use bytecheck::CheckBytes;
+use rkyv::{Archive, Deserialize, Serialize};
 
 use std::{collections::HashMap, ops::Index};
+
+use crate::utils::normalize;
 
 pub trait RegistryID: Copy {
     fn from_index(index: usize) -> Self;
@@ -37,7 +40,7 @@ impl RegistryID for u64 {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Clone)]
 pub struct Registry<ID: RegistryID> {
     values: Vec<Box<str>>,
     lookup: HashMap<Box<str>, ID>,
@@ -93,5 +96,37 @@ impl<ID: RegistryID> Index<ID> for Registry<ID> {
 
     fn index(&self, id: ID) -> &Self::Output {
         &self.values[id.index()]
+    }
+}
+
+#[derive(Debug, Clone, Archive, Serialize, Deserialize, CheckBytes)]
+pub struct RegistryRecord {
+    pub values: Vec<Box<str>>,
+}
+
+impl<ID: RegistryID> Registry<ID> {
+    pub fn to_record(&self) -> RegistryRecord {
+        RegistryRecord {
+            values: self.values.clone(),
+        }
+    }
+
+    pub fn from_record(record: RegistryRecord) -> Self {
+        let mut registry = Self::default();
+
+        for value in record.values {
+            registry.intern(&value);
+        }
+
+        registry
+    }
+}
+
+impl<ID: RegistryID> Default for Registry<ID> {
+    fn default() -> Self {
+        Self {
+            values: Vec::new(),
+            lookup: HashMap::new(),
+        }
     }
 }
