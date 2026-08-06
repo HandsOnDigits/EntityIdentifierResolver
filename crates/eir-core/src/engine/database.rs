@@ -3,10 +3,10 @@ use rkyv::{Archive, Deserialize, Serialize, bytecheck::CheckBytes};
 use crate::{
     entity::{
         EntityDocument,
-        types::{EntityID, RelationshipTypeID, SourceID, TagID},
+        types::{EntityID, SourceID, TagID},
     },
     index::{AliasIndexRecord, BKTreeIndexRecord, InvertedIndexRecord, Resolver, TrieIndexRecord},
-    storage::PostingListRecord,
+    storage::{PostingListRecord, RegistryRecord},
 };
 
 #[derive(Debug, Archive, Serialize, Deserialize, CheckBytes)]
@@ -30,7 +30,7 @@ pub struct Database {
     pub source_index: PostingListRecord<SourceID>,
 
     pub relationship_index: PostingListRecord<EntityID>,
-    pub relationship_types: PostingListRecord<RelationshipTypeID>,
+    pub relationship_types: RegistryRecord,
 }
 
 impl Database {
