@@ -3,7 +3,7 @@ use bytecheck::CheckBytes;
 use rkyv::{Archive, Deserialize, Serialize};
 
 use crate::{
-    entity::types::{Alias, EntityID},
+    entity::prelude::types::{Alias, EntityID},
     utils::normalize,
 };
 
