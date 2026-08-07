@@ -5,7 +5,7 @@ use rkyv::{Archive, Deserialize, Serialize};
 use std::collections::HashMap;
 
 use crate::{
-    entity::types::{Alias, EntityID},
+    entity::prelude::types::{Alias, EntityID},
     utils::normalize,
 };
 
