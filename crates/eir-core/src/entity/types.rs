@@ -1,15 +1,21 @@
 use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
 use serde::{Deserialize, Serialize}; // Bring serde traits into scope
 
+use super::macros::{define_id, define_registry_id};
+
 use crate::utils::normalize;
 
-pub type EntityID = u64;
+define_id!(RelationshipTypeID, u16);
+define_id!(TagID, u32);
+define_id!(SourceID, u32);
+define_id!(AttributeKeyID, u32);
+define_id!(EntityID, u64);
 
-pub type TagID = u32;
-
-pub type SourceID = u32;
-
-pub type RelationshipTypeID = u16;
+define_registry_id!(RelationshipTypeID, u16);
+define_registry_id!(TagID, u32);
+define_registry_id!(SourceID, u32);
+define_registry_id!(AttributeKeyID, u32);
+define_registry_id!(EntityID, u64);
 
 #[derive(
     Archive,
@@ -64,8 +70,6 @@ impl Date {
 
 pub type Alias = Box<str>;
 
-pub type AttributeKeyID = u32;
-
 #[derive(
     Archive, RkyvSerialize, RkyvDeserialize, Serialize, Deserialize, Debug, Clone, PartialEq,
 )]
@@ -81,7 +85,7 @@ impl ArchivedValue {
             Self::Integer(value) => value.to_string(),
             Self::Float(value) => value.to_string(),
             Self::Boolean(value) => value.to_string(),
-            Self::Entity(value) => value.to_string(),
+            Self::Entity(value) => value.0.to_string(),
         }
     }
 }
@@ -106,18 +110,6 @@ impl Value {
             Self::Boolean(b) => String::into_boxed_str(b.to_string()),
             Self::Entity(id) => String::into_boxed_str(id.to_string()),
         }
-    }
-}
-
-#[derive(Debug)]
-pub enum EntityError {
-    Io(std::io::Error),
-    Serialize(rkyv::rancor::Error),
-}
-
-impl From<std::io::Error> for EntityError {
-    fn from(error: std::io::Error) -> Self {
-        EntityError::Io(error)
     }
 }
 
@@ -171,8 +163,8 @@ pub struct Relationship {
     pub target: EntityID,
 }
 
-pub struct EntityIndexEntry {
-    pub id: u64,
-    pub offset: u64,
-    pub size: u32,
+impl ArchivedEntityID {
+    pub fn to_native(&self) -> EntityID {
+        EntityID(self.0.into())
+    }
 }
