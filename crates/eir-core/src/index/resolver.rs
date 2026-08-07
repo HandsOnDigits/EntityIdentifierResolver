@@ -8,7 +8,9 @@ use std::collections::HashMap;
 use crate::{
     engine::Database,
     entity::EntityDocument,
-    entity::types::{AttributeKeyID, EntityID, Relationship, RelationshipTypeID, SourceID, TagID},
+    entity::prelude::types::{
+        AttributeKeyID, EntityID, Relationship, RelationshipTypeID, SourceID, TagID,
+    },
     storage::{PostingList, Registry},
     utils::normalize,
 };
@@ -75,7 +77,7 @@ impl Resolver {
         for attribute in &input.attributes {
             let key = self
                 .attribute_names
-                .get(attribute.key as usize)
+                .get(attribute.key.as_usize())
                 .map(|x| x.to_string())
                 .expect("invalid attribute key");
 
@@ -399,7 +401,7 @@ impl Resolver {
                 .attribute_keys
                 .iter()
                 .enumerate()
-                .map(|(id, key)| (normalize(key), id as AttributeKeyID))
+                .map(|(id, key)| (normalize(key), AttributeKeyID::from_usize(id)))
                 .collect(),
 
             attribute_names: database.attribute_keys.clone(),
@@ -414,14 +416,14 @@ impl Resolver {
                 .tags
                 .iter()
                 .enumerate()
-                .map(|(id, tag)| (normalize(tag), id as TagID))
+                .map(|(id, tag)| (normalize(tag), TagID::from_usize(id)))
                 .collect(),
 
             source_lookup: database
                 .sources
                 .iter()
                 .enumerate()
-                .map(|(id, source)| (normalize(source), id as SourceID))
+                .map(|(id, source)| (normalize(source), SourceID::from_usize(id)))
                 .collect(),
 
             relationship_targets: PostingList::from_archive(database.relationship_index.clone()),
