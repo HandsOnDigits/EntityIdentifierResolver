@@ -9,7 +9,7 @@ use crate::prelude::{
     storage::{PostingListRecord, RegistryRecord},
 };
 
-#[derive(Debug, Archive, Serialize, Deserialize, CheckBytes)]
+#[derive(Debug, Archive, Serialize, Deserialize, CheckBytes, Default)]
 pub struct Database {
     pub entities: Vec<EntityDocument>,
 
