@@ -1,6 +1,6 @@
 use crate::{
     entity::EntityDocument,
-    entity::types::{EntityID, TagID},
+    entity::prelude::types::{EntityID, TagID},
 };
 
 pub fn test_entity(id: EntityID, alias: &str) -> EntityDocument {
