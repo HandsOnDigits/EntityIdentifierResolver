@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::entity::types::EntityID;
+use crate::entity::prelude::types::EntityID;
 
 use super::Signal;
 
