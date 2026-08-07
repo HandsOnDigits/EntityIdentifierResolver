@@ -98,4 +98,20 @@ mod tests {
 
         assert!(archived.entities.is_empty());
     }
+
+    #[test]
+    fn empty_database_resolves_safely() {
+        let database = Database::default();
+
+        let resolver = database.resolver();
+
+        assert!(resolver.resolve("anything").is_empty());
+    }
+
+    #[test]
+    fn database_missing_entity_returns_none() {
+        let database = fixture_database();
+
+        assert!(database.entity(EntityID(999)).is_none());
+    }
 }
