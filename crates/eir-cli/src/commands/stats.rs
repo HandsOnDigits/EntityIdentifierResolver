@@ -11,10 +11,14 @@ pub fn execute(path: std::path::PathBuf) -> anyhow::Result<()> {
     println!("Database Statistics");
     println!("===================");
     println!();
-    println!("Entities:    {}", database.entities.len());
-    println!("Tags:        {}", database.tags.len());
-    println!("Sources:     {}", database.sources.len());
-    println!("attributes:  {}", database.attribute_keys.len());
+    println!("Entities:           {}", database.entities.len());
+    println!("Tags:               {}", database.tags.len());
+    println!("Sources:            {}", database.sources.len());
+    println!("attributes:         {}", database.attribute_keys.len());
+    println!(
+        "Relationship Types: {}",
+        database.relationship_types.values.len()
+    );
 
     println!();
     println!("Indexes");
@@ -25,6 +29,14 @@ pub fn execute(path: std::path::PathBuf) -> anyhow::Result<()> {
     println!("Tokens:      {}", database.inverted_index.entries.len());
     println!("Tags:        {}", database.tag_index.index.len());
     println!("Sources:     {}", database.source_index.index.len());
+    println!(
+        "Relationships: {}",
+        database
+            .entities
+            .iter()
+            .map(|e| e.relationships.len())
+            .sum::<usize>()
+    );
 
     Ok(())
 }
