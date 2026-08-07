@@ -72,7 +72,7 @@ cargo eir inspect database.eir --entity 1 --verbose
 ## Search entities
 
 ```bash
-cargo eir search database.eir fizzberry
+cargo eir search database.eir "fizzberry"
 ```
 
 Output:
@@ -97,7 +97,7 @@ Search supports:
 Example:
 
 ```bash
-cargo eir search database.eir drink
+cargo eir search database.eir "drink"
 ```
 
 Output:
@@ -123,7 +123,7 @@ cargo eir build --input entities.json --output database.eir
 cargo eir inspect database.eir --entity 1
 
 # Test search
-cargo eir search database.eir fizzberry
+cargo eir search database.eir "fizzberry"
 ```
 
 EIR is designed for fast local entity resolution using aliases, indexes, metadata, and relationships.
