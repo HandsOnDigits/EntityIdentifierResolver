@@ -1,16 +1,17 @@
-use std::path::PathBuf;
-
 use anyhow::Result;
 use clap::Args;
+use std::path::PathBuf;
 
-use eir_core::engine::load_database;
+use eir_core::entity::archived_id_index;
+
+use eir_core::{engine::load_database, entity::prelude::types::EntityID};
 
 #[derive(Args, Debug)]
 pub struct InspectArgs {
     pub input: PathBuf,
 
     #[arg(short, long)]
-    pub entity: u64,
+    pub entity: EntityID,
 
     /// Show internal IDs
     #[arg(short, long)]
@@ -26,7 +27,7 @@ pub fn execute(args: InspectArgs) -> Result<()> {
         .find(|entity| entity.id == args.entity)
         .ok_or_else(|| anyhow::anyhow!("Entity not found"))?;
 
-    println!("Entity: {}", entity.id);
+    println!("Entity: {}", archived_id_index!(entity.id));
     println!();
 
     println!("Names:");
@@ -38,10 +39,12 @@ pub fn execute(args: InspectArgs) -> Result<()> {
 
     println!("Tags:");
     for tag in entity.tags.iter() {
+        let index = archived_id_index!(tag);
+
         if args.verbose {
-            println!("  {} ({})", database.tags[tag.to_native() as usize], tag);
+            println!("  {} ({})", database.tags[index], index);
         } else {
-            println!("  {}", database.tags[tag.to_native() as usize]);
+            println!("  {}", database.tags[index]);
         }
     }
 
@@ -76,19 +79,19 @@ pub fn execute(args: InspectArgs) -> Result<()> {
                 if args.verbose {
                     println!(
                         "  {} -> {} ({})",
-                        relationship.kind.as_str(),
+                        archived_id_index!(relationship.kind),
                         name,
-                        relationship.target
+                        archived_id_index!(relationship.target)
                     );
                 } else {
-                    println!("  {} -> {}", relationship.kind.as_str(), name);
+                    println!("  {} -> {}", archived_id_index!(relationship.kind), name);
                 }
             }
             None => {
                 println!(
                     "  {} -> Unknown ({})",
-                    relationship.kind.as_str(),
-                    relationship.target
+                    archived_id_index!(relationship.kind),
+                    archived_id_index!(relationship.target)
                 );
             }
         }
@@ -98,10 +101,12 @@ pub fn execute(args: InspectArgs) -> Result<()> {
 
     println!("Sources:");
     for source in entity.sources.iter() {
-        let name = &database.sources[source.to_native() as usize];
+        let index = archived_id_index!(source);
+
+        let name = &database.sources[index];
 
         if args.verbose {
-            println!("  {} ({})", name, source.to_native());
+            println!("  {} ({})", name, index);
         } else {
             println!("  {}", name);
         }
