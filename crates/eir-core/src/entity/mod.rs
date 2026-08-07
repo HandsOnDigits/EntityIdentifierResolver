@@ -1,8 +1,22 @@
-pub mod types;
+mod macros;
+mod types;
+
+use rkyv::{Archive, Deserialize, Serialize, bytecheck::CheckBytes};
 
 use types::*;
 
-use rkyv::{Archive, Deserialize, Serialize, bytecheck::CheckBytes};
+pub use macros::archived_id_index;
+
+pub mod prelude {
+    pub mod types {
+        pub use crate::entity::types::{
+            Alias, Attribute, AttributeKeyID, Date, EntityID, EntityName, Relationship,
+            RelationshipTypeID, SourceID, Tag, TagID, Value,
+        };
+    }
+
+    pub use super::{Entity, EntityDocument, EntitySource};
+}
 
 #[derive(Archive, Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct EntitySource {
