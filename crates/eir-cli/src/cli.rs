@@ -30,32 +30,11 @@ pub enum Commands {
     /// Inspect an entity in the database
     Inspect(InspectArgs),
 
-    /// Build or manage indexes
-    Index {
-        #[command(subcommand)]
-        command: IndexCommands,
-    },
-
     /// Search entities
     Search(SearchArgs),
 
     /// Generate shell completions
     Completions { shell: Shell },
-}
-
-#[derive(Subcommand, Debug)]
-pub enum IndexCommands {
-    Build {
-        #[arg(short, long)]
-        input: String,
-
-        #[arg(short, long)]
-        output: String,
-    },
-
-    Stats {
-        path: String,
-    },
 }
 
 #[derive(Clone, ValueEnum, Debug)]
