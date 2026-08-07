@@ -13,6 +13,7 @@ mod tests {
     use super::*;
 
     use crate::{
+        entity::prelude::types::EntityID,
         index::Resolver,
         query::Query,
         search::{CandidateSet, context::SearchContext, test_utils::test_entity},
@@ -20,9 +21,11 @@ mod tests {
 
     #[test]
     fn fuzzy_alias_adds_candidate() {
+        let entity_id = EntityID(1);
+
         let mut resolver = Resolver::default();
 
-        resolver.add(test_entity(1, "FizzBerry"));
+        resolver.add(test_entity(entity_id, "FizzBerry"));
 
         let query = Query::parse("FizBerry");
 
@@ -35,7 +38,7 @@ mod tests {
 
         execute(&mut ctx, 1);
 
-        let candidate = ctx.candidates.get(1).unwrap();
+        let candidate = ctx.candidates.get(entity_id).unwrap();
 
         assert!(candidate.signals.contains(&Signal::FuzzyAlias));
     }
