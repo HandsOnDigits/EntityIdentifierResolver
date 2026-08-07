@@ -13,6 +13,7 @@ mod tests {
     use super::*;
 
     use crate::{
+        entity::prelude::types::EntityID,
         index::Resolver,
         query::Query,
         search::{CandidateSet, context::SearchContext, test_utils::test_entity},
@@ -22,7 +23,9 @@ mod tests {
     fn exact_alias_adds_candidate() {
         let mut resolver = Resolver::default();
 
-        resolver.add(test_entity(1, "FizzBerry Spark"));
+        let entity_id = EntityID(1);
+
+        resolver.add(test_entity(entity_id, "FizzBerry Spark"));
 
         let query = Query::parse("fizzberry spark");
 
@@ -35,7 +38,7 @@ mod tests {
 
         execute(&mut ctx);
 
-        let candidate = ctx.candidates.get(1).unwrap();
+        let candidate = ctx.candidates.get(entity_id).unwrap();
 
         assert!(candidate.signals.contains(&Signal::ExactAlias));
     }
