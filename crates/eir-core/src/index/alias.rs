@@ -32,7 +32,7 @@ impl AliasIndex {
     }
 }
 
-#[derive(Archive, Serialize, Deserialize, CheckBytes, Debug, Clone)]
+#[derive(Archive, Serialize, Deserialize, CheckBytes, Debug, Clone, Default)]
 pub struct AliasIndexRecord {
     pub entries: HashMap<Alias, Vec<EntityID>>,
 }
