@@ -2,7 +2,7 @@ use rkyv::{rancor, to_bytes};
 
 use std::fs;
 
-use eir_core::prelude::Database;
+use eir_core::engine::Database;
 
 pub fn write_database(database: Database, path: impl AsRef<std::path::Path>) -> anyhow::Result<()> {
     let bytes = to_bytes::<rancor::Error>(&database)?;
