@@ -1,12 +1,18 @@
 use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
 use serde::{Deserialize, Serialize};
 
-use eir_core::entity::prelude::types::{Date, EntityID, EntityName, Relationship};
+use eir_core::entity::prelude::types::{Date, EntityID, EntityName};
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, Serialize, Deserialize, Debug, Clone)]
 pub struct FixtureAttribute {
     pub key: String,
     pub value: String,
+}
+
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, Serialize, Deserialize, Debug, Clone)]
+pub struct FixtureRelationship {
+    pub target: EntityID,
+    pub kind: String,
 }
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, Serialize, Deserialize, Debug, Clone)]
@@ -22,7 +28,7 @@ pub struct FixtureEntity {
     pub attributes: Vec<FixtureAttribute>,
 
     #[serde(default)]
-    pub relationships: Vec<Relationship>,
+    pub relationships: Vec<FixtureRelationship>,
 
     #[serde(default)]
     pub sources: Vec<FixtureSource>,
