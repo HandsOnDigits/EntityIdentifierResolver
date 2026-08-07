@@ -6,6 +6,8 @@ pub struct BuilderContext {
     pub sources: Registry<SourceID>,
 
     pub attribute_keys: Registry<AttributeKeyID>,
+
+    pub relationship_types: Registry<RelationshipTypeID>,
 }
 
 impl BuilderContext {
@@ -16,6 +18,8 @@ impl BuilderContext {
             sources: Registry::default(),
 
             attribute_keys: Registry::default(),
+
+            relationship_types: Registry::default(),
         }
     }
 }
