@@ -2,7 +2,7 @@ use rkyv::{Archive, Deserialize, Serialize};
 
 use super::posting_list::PostingListRecord;
 
-use crate::entity::{
+use crate::entity::prelude::{
     EntityDocument,
     types::{SourceID, TagID},
 };
