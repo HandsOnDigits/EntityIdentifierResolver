@@ -1,6 +1,6 @@
 use eir_core::entity::prelude::{
     EntityDocument, EntitySource,
-    types::{Attribute, Value},
+    types::{Attribute, Relationship, Value},
 };
 
 use super::BuilderContext;
@@ -39,7 +39,14 @@ pub fn map(entity: FixtureEntity, ctx: &mut BuilderContext) -> EntityDocument {
             })
             .collect(),
 
-        relationships: entity.relationships,
+        relationships: entity
+            .relationships
+            .into_iter()
+            .map(|relationship| Relationship {
+                target: relationship.target,
+                kind: ctx.relationship_types.intern(&relationship.kind),
+            })
+            .collect(),
 
         sources: entity
             .sources
