@@ -1,7 +1,7 @@
 mod backend;
 mod indexes;
 mod posting_list;
-mod registry;
+pub mod registry;
 pub mod segment;
 mod store;
 pub mod wal;
