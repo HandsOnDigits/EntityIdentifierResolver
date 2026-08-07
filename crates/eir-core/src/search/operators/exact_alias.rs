@@ -16,7 +16,8 @@ mod tests {
         entity::prelude::types::EntityID,
         index::Resolver,
         query::Query,
-        search::{CandidateSet, context::SearchContext, test_utils::test_entity},
+        search::{CandidateSet, context::SearchContext},
+        test::test_entity,
     };
 
     #[test]

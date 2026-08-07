@@ -8,6 +8,9 @@ pub mod search;
 pub mod storage;
 pub mod utils;
 
+#[cfg(test)]
+pub mod test;
+
 pub use engine::Database;
 pub use storage::{IndexBuilder, Indexes};
 

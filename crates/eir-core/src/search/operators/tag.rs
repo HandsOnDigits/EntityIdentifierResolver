@@ -18,7 +18,8 @@ fn tag_adds_candidate() {
         entity::prelude::types::{EntityID, TagID},
         index::Resolver,
         query::Query,
-        search::{CandidateSet, context::SearchContext, test_utils::test_entity_with_tag},
+        search::{CandidateSet, context::SearchContext},
+        test::test_entity_with_tag,
     };
 
     let mut resolver = Resolver::default();

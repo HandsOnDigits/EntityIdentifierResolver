@@ -19,7 +19,7 @@ mod tests {
         search::{CandidateSet, context::SearchContext},
     };
 
-    use crate::search::test_utils::test_entity;
+    use crate::test::test_entity;
 
     #[test]
     fn prefix_alias_adds_candidate() {

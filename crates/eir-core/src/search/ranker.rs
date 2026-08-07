@@ -5,14 +5,6 @@ use crate::{
     search::result::{SearchExplanation, SearchHit, SearchSource},
 };
 
-use super::signal::SignalSet;
-
-pub struct RankedCandidate {
-    pub entity: EntityID,
-    pub score: f32,
-    pub signals: SignalSet,
-}
-
 #[derive(Default)]
 pub struct Ranker;
 
@@ -45,19 +37,15 @@ impl Ranker {
     }
 
     fn calculate_score(sources: &HashSet<SearchSource>) -> f32 {
-        let base = sources
+        let strongest = sources
             .iter()
-            .map(|source| Self::weight(*source))
-            .fold(0.0, f32::max);
+            .map(|s| Self::weight(*s))
+            .max_by(|a, b| a.total_cmp(b))
+            .unwrap_or(0.0);
 
-        let bonus = match sources.len() {
-            0 | 1 => 0.0,
-            2 => 0.05,
-            3 => 0.10,
-            _ => 0.15,
-        };
+        let supporting = (sources.len().saturating_sub(1) as f32) * 0.03;
 
-        (base + bonus).min(1.0)
+        (strongest + supporting).min(1.0)
     }
 
     pub fn rank(
@@ -89,5 +77,84 @@ impl Ranker {
         results.sort_by(|a, b| b.score.total_cmp(&a.score));
 
         results
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::entity::prelude::types::TagID;
+
+    fn exact(alias: &str) -> SearchExplanation {
+        SearchExplanation::ExactAlias {
+            alias: alias.into(),
+        }
+    }
+
+    fn fuzzy(alias: &str) -> SearchExplanation {
+        SearchExplanation::FuzzyAlias {
+            alias: alias.into(),
+        }
+    }
+
+    fn token(token: &str) -> SearchExplanation {
+        SearchExplanation::Token {
+            token: token.into(),
+        }
+    }
+
+    #[test]
+    fn exact_alias_beats_fuzzy() {
+        let ranker = Ranker::new();
+
+        let results = ranker.rank(vec![
+            (EntityID(1), SearchSource::FuzzyAlias, fuzzy("Appl")),
+            (EntityID(2), SearchSource::ExactAlias, exact("Apple")),
+        ]);
+
+        assert_eq!(results[0].entity_id, EntityID(2));
+        assert_eq!(results[0].score, 1.0);
+    }
+
+    #[test]
+    fn multiple_signals_add_bonus() {
+        let ranker = Ranker::new();
+
+        let results = ranker.rank(vec![
+            (EntityID(1), SearchSource::Token, token("apple")),
+            (
+                EntityID(1),
+                SearchSource::Tag,
+                SearchExplanation::Tag { tag: TagID(1) },
+            ),
+        ]);
+
+        assert_eq!(results.len(), 1);
+        assert!(results[0].score > 0.40);
+    }
+
+    #[test]
+    fn attribute_key_value_beats_attribute_value() {
+        let candidates = vec![
+            (
+                EntityID(1),
+                SearchSource::AttributeValue,
+                SearchExplanation::AttributeValue {
+                    term: "milk".into(),
+                },
+            ),
+            (
+                EntityID(2),
+                SearchSource::AttributeKeyValue,
+                SearchExplanation::AttributeKeyValue {
+                    key: "brand".into(),
+                    value: "nestle".into(),
+                },
+            ),
+        ];
+
+        let results = Ranker::new().rank(candidates);
+
+        assert_eq!(results[0].entity_id, EntityID(2));
     }
 }

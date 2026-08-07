@@ -8,9 +8,6 @@ mod ranker;
 pub mod result;
 mod signal;
 
-#[cfg(test)]
-pub mod test_utils;
-
 pub use candidate::CandidateSet;
 pub use executor::SearchExecutor;
 pub use planner::{SearchPlan, SearchStage};
