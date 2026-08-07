@@ -13,6 +13,7 @@ mod tests {
     use super::*;
 
     use crate::{
+        entity::prelude::types::EntityID,
         index::Resolver,
         query::Query,
         search::{CandidateSet, context::SearchContext},
@@ -24,7 +25,9 @@ mod tests {
     fn prefix_alias_adds_candidate() {
         let mut resolver = Resolver::default();
 
-        resolver.add(test_entity(1, "FizzBerry Spark"));
+        let entity_id = EntityID(1);
+
+        resolver.add(test_entity(entity_id, "FizzBerry Spark"));
 
         let query = Query::parse("Fizz");
 
@@ -37,7 +40,7 @@ mod tests {
 
         execute(&mut ctx);
 
-        let candidate = ctx.candidates.get(1).unwrap();
+        let candidate = ctx.candidates.get(entity_id).unwrap();
 
         assert!(candidate.signals.contains(&Signal::PrefixAlias));
     }
