@@ -99,7 +99,7 @@ impl<ID: RegistryID> Index<ID> for Registry<ID> {
     }
 }
 
-#[derive(Debug, Clone, Archive, Serialize, Deserialize, CheckBytes)]
+#[derive(Debug, Clone, Archive, Serialize, Deserialize, CheckBytes, Default)]
 pub struct RegistryRecord<ID> {
     pub values: Vec<Box<str>>,
     #[rkyv(with = rkyv::with::Skip)]
