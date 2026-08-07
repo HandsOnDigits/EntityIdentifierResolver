@@ -1,7 +1,7 @@
 use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
 use serde::{Deserialize, Serialize};
 
-use eir_core::prelude::*;
+use eir_core::entity::prelude::types::{Date, EntityID, EntityName, Relationship};
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, Serialize, Deserialize, Debug, Clone)]
 pub struct FixtureAttribute {
