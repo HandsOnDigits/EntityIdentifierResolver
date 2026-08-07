@@ -1,4 +1,7 @@
-use eir_core::prelude::*;
+use eir_core::entity::prelude::{
+    EntityDocument, EntitySource,
+    types::{Attribute, Value},
+};
 
 use super::BuilderContext;
 use super::fixture::{FixtureEntity, FixtureSource};
