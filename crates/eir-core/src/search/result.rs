@@ -1,4 +1,4 @@
-use crate::entity::{
+use crate::entity::prelude::{
     EntityDocument,
     types::{Alias, EntityID, RelationshipTypeID, SourceID, TagID},
 };
