@@ -1,8 +1,11 @@
 use rkyv::{Archive, Deserialize, Serialize};
 
-use crate::entity::{
-    EntityDocument,
-    types::{EntityID, RelationshipTypeID, SourceID, TagID},
+use crate::{
+    entity::prelude::{
+        EntityDocument,
+        types::{EntityID, RelationshipTypeID, SourceID, TagID},
+    },
+    storage::Registry,
 };
 
 use crate::{index::prelude::*, utils::normalize};
@@ -24,7 +27,7 @@ pub struct Indexes {
     pub attribute_pairs: InvertedIndex,
 
     pub relationships: PostingList<EntityID>,
-    pub relationships_type: PostingList<RelationshipTypeID>,
+    pub relationships_type: Registry<RelationshipTypeID>,
 }
 
 #[derive(Archive, Serialize, Deserialize, Debug)]
@@ -63,7 +66,7 @@ impl IndexBuilder {
             }
 
             for attribute in &entity.attributes {
-                let Some(key) = attribute_keys.get(attribute.key as usize) else {
+                let Some(key) = attribute_keys.get(attribute.key.0 as usize) else {
                     continue;
                 };
 

@@ -4,11 +4,19 @@ use std::{collections::HashMap, hash::Hash};
 
 use roaring::RoaringTreemap;
 
-use crate::entity::types::EntityID;
+use crate::entity::prelude::types::EntityID;
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
 pub struct PostingList<K> {
     pub index: HashMap<K, RoaringTreemap>,
+}
+
+impl<K> Default for PostingList<K> {
+    fn default() -> Self {
+        Self {
+            index: HashMap::new(),
+        }
+    }
 }
 
 impl<K> PostingList<K>
@@ -23,7 +31,7 @@ where
                 let mut bitmap = RoaringTreemap::new();
 
                 for entity in entities {
-                    bitmap.insert(entity);
+                    bitmap.insert(entity.into());
                 }
 
                 (key, bitmap)
@@ -37,20 +45,20 @@ where
         let index = self
             .index
             .iter()
-            .map(|(key, entities)| (*key, entities.iter().collect()))
+            .map(|(key, entities)| (*key, entities.iter().map(EntityID::from).collect()))
             .collect();
 
         PostingListRecord { index }
     }
 
     pub fn insert(&mut self, key: K, entity: EntityID) {
-        self.index.entry(key).or_default().insert(entity);
+        self.index.entry(key).or_default().insert(entity.into());
     }
 
     pub fn lookup(&self, key: K) -> Vec<EntityID> {
         self.index
             .get(&key)
-            .map(|entities| entities.iter().collect())
+            .map(|entities| entities.iter().map(EntityID::from).collect())
             .unwrap_or_default()
     }
 
@@ -59,7 +67,13 @@ where
     }
 }
 
-#[derive(Archive, Serialize, Deserialize, CheckBytes, Debug, Clone, Default)]
+#[derive(Archive, Serialize, Deserialize, CheckBytes, Debug, Clone)]
 pub struct PostingListRecord<K> {
     pub index: Vec<(K, Vec<EntityID>)>,
+}
+
+impl<K> Default for PostingListRecord<K> {
+    fn default() -> Self {
+        Self { index: Vec::new() }
+    }
 }
