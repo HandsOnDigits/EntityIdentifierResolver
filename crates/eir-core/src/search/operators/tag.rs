@@ -15,6 +15,7 @@ pub fn execute(ctx: &mut SearchContext) {
 #[test]
 fn tag_adds_candidate() {
     use crate::{
+        entity::prelude::types::{EntityID, TagID},
         index::Resolver,
         query::Query,
         search::{CandidateSet, context::SearchContext, test_utils::test_entity_with_tag},
@@ -22,11 +23,12 @@ fn tag_adds_candidate() {
 
     let mut resolver = Resolver::default();
 
-    let tag_id = 1;
+    let tag_id = TagID(1);
+    let entity_id = EntityID(1);
 
     resolver.register_tag(tag_id, "drink".into());
 
-    resolver.add(test_entity_with_tag(1, "FizzBerry Spark", tag_id));
+    resolver.add(test_entity_with_tag(entity_id, "FizzBerry Spark", tag_id));
 
     let query = Query::parse("drink");
 
@@ -41,7 +43,7 @@ fn tag_adds_candidate() {
 
     assert!(
         ctx.candidates
-            .get(1)
+            .get(entity_id)
             .unwrap()
             .signals
             .contains(&Signal::Tag)
