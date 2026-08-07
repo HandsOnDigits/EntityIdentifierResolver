@@ -1,4 +1,4 @@
-use eir_core::prelude::*;
+use eir_core::{entity::prelude::types::*, storage::Registry};
 
 pub struct BuilderContext {
     pub tags: Registry<TagID>,
