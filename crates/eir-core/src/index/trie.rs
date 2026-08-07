@@ -4,7 +4,7 @@ use rkyv::{Archive, Deserialize, Serialize};
 
 use std::collections::HashMap;
 
-use crate::{entity::types::EntityID, utils::normalize};
+use crate::{entity::prelude::types::EntityID, utils::normalize};
 
 #[derive(Default, Debug)]
 pub struct TrieIndex {
