@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::{
-    entity::types::EntityID,
+    entity::prelude::types::EntityID,
     search::result::{SearchExplanation, SearchHit, SearchSource},
 };
 
