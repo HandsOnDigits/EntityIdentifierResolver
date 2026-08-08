@@ -22,6 +22,7 @@ macro_rules! define_id {
             serde::Serialize,
             serde::Deserialize,
         )]
+        #[serde(transparent)]
         pub struct $name {
             index: usize,
         }
