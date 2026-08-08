@@ -4,7 +4,7 @@ use super::types::Alias;
 
 #[derive(Debug, Deserialize)]
 pub struct EntityInput {
-    pub id: u64,
+    pub id: usize,
 
     #[serde(rename = "names")]
     pub aliases: Vec<Alias>,
@@ -26,7 +26,7 @@ pub struct PropertyInput {
 
 #[derive(Debug, Deserialize)]
 pub struct RelationshipInput {
-    pub target: u64,
+    pub target: usize,
     pub kind: Alias,
 }
 

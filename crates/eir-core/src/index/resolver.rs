@@ -122,7 +122,7 @@ impl Resolver {
         for attribute in &input.attributes {
             let key = self
                 .attribute_names
-                .get(attribute.key.as_usize())
+                .get(attribute.key.index())
                 .map(|x| x.to_string())
                 .expect("invalid attribute key");
 
@@ -208,7 +208,7 @@ impl Resolver {
 
         if let Some(doc) = self.documents.get(&entity) {
             for relationship in &doc.relationships {
-                if relationship.kind == kind {
+                if relationship.kind.to_id() == kind {
                     result.push((relationship.target, relationship));
                 }
             }
@@ -225,7 +225,7 @@ impl Resolver {
     }
 
     pub fn register_relationship_type(&mut self, name: &str) -> RelationshipTypeID {
-        self.relationship_types.intern(name)
+        self.relationship_types.intern(name.into())
     }
 
     pub fn relationship_type_id(&self, name: &str) -> Option<RelationshipTypeID> {
@@ -252,7 +252,7 @@ impl Resolver {
 
         for (id, document) in &self.documents {
             for relationship in &document.relationships {
-                if relationship.kind == kind && relationship.target == target {
+                if relationship.kind.to_id() == kind && relationship.target == target {
                     result.push(*id);
                 }
             }
@@ -302,7 +302,7 @@ impl Resolver {
                     entity_id,
                     SearchSource::Relationship,
                     SearchExplanation::Relationship {
-                        kind: relationship.kind,
+                        kind: relationship.kind.to_id(),
                         target,
                     },
                 ));
@@ -445,11 +445,14 @@ impl Resolver {
             attribute_lookup: database
                 .attribute_keys
                 .iter()
-                .enumerate()
-                .map(|(id, name)| (normalize(name).into(), AttributeKeyID(id as u32)))
+                .map(|(id, name)| (normalize(name).into(), id))
                 .collect(),
 
-            attribute_names: database.attribute_keys.iter().map(|v| v.into()).collect(),
+            attribute_names: database
+                .attribute_keys
+                .iter()
+                .map(|(_, name)| normalize(name))
+                .collect(),
 
             attribute_keys: database.indexes.attribute_key.clone(),
             attribute_values: database.indexes.attribute_value.clone(),
@@ -458,15 +461,13 @@ impl Resolver {
             tag_lookup: database
                 .tags
                 .iter()
-                .enumerate()
-                .map(|(id, name)| (normalize(name).into(), TagID(id as u32)))
+                .map(|(id, name)| (normalize(name), id))
                 .collect(),
 
             source_lookup: database
                 .sources
                 .iter()
-                .enumerate()
-                .map(|(id, name)| (normalize(name).into(), SourceID(id as u32)))
+                .map(|(id, name)| (normalize(name), id))
                 .collect(),
 
             relationship_targets: database.indexes.relationship.clone(),

@@ -39,8 +39,14 @@ pub struct ArchivedIndexes {
 pub struct IndexBuilder;
 
 impl IndexBuilder {
-    pub fn build(inputs: &[EntityDocument], attribute_keys: &[Box<str>]) -> Indexes {
+    pub fn build<'a>(
+        inputs: &[EntityDocument],
+        attribute_keys: impl IntoIterator<Item = &'a Box<str>>,
+    ) -> Indexes {
         let mut indexes = Indexes::default();
+
+        // Collect keys into a contiguous slice for O(1) indexed access via attribute.key.index()
+        let keys: Vec<&str> = attribute_keys.into_iter().map(|k| k.as_ref()).collect();
 
         for entity in inputs {
             let id = entity.id;
@@ -66,11 +72,11 @@ impl IndexBuilder {
             }
 
             for attribute in &entity.attributes {
-                let Some(key) = attribute_keys.get(attribute.key.0 as usize) else {
+                let Some(&key_str) = keys.get(attribute.key.index()) else {
                     continue;
                 };
 
-                let key = normalize(key);
+                let key = normalize(key_str);
                 let value = attribute.value.normalized();
 
                 indexes.attribute_keys.insert(&key, id);

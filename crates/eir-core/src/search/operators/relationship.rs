@@ -28,6 +28,7 @@ mod tests {
     use super::*;
 
     use crate::{
+        entity::prelude::types::RelationshipType,
         entity::prelude::{
             EntityDocument,
             types::{EntityID, Relationship},
@@ -42,8 +43,8 @@ mod tests {
     fn relationship_adds_candidate() {
         let mut resolver = Resolver::default();
 
-        let entity_id_1 = EntityID(1);
-        let entity_id_2 = EntityID(10);
+        let entity_id_1 = EntityID::new(1);
+        let entity_id_2 = EntityID::new(10);
 
         let manufacturer_type = resolver.register_relationship_type("manufacturer");
 
@@ -53,7 +54,7 @@ mod tests {
             id: entity_id_1,
             aliases: vec!["Chocolate Bar".into()],
             relationships: vec![Relationship {
-                kind: manufacturer_type,
+                kind: RelationshipType::Custom(manufacturer_type),
                 target: entity_id_2,
             }],
             attributes: Vec::new(),
@@ -83,8 +84,8 @@ mod tests {
     fn relationship_lookup_finds_target() {
         let mut resolver = Resolver::default();
 
-        let entity_id_1 = EntityID(1);
-        let entity_id_2 = EntityID(10);
+        let entity_id_1 = EntityID::new(1);
+        let entity_id_2 = EntityID::new(10);
 
         let manufacturer_type = resolver.register_relationship_type("manufacturer");
 
@@ -94,7 +95,7 @@ mod tests {
             id: entity_id_1,
             aliases: vec!["Chocolate Bar".into()],
             relationships: vec![Relationship {
-                kind: manufacturer_type,
+                kind: RelationshipType::Custom(manufacturer_type),
                 target: entity_id_2,
             }],
             attributes: Vec::new(),

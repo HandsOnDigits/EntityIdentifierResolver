@@ -25,7 +25,7 @@ mod tests {
     fn prefix_alias_adds_candidate() {
         let mut resolver = Resolver::default();
 
-        let entity_id = EntityID(1);
+        let entity_id = EntityID::new(1);
 
         resolver.add(test_entity(entity_id, "FizzBerry Spark"));
 

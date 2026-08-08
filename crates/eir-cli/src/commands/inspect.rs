@@ -37,13 +37,7 @@ pub fn execute(args: InspectArgs) -> Result<()> {
 
     println!("Tags:");
     for &tag in &entity.tags {
-        let index = tag.as_usize();
-        let name = database
-            .tags
-            .values()
-            .get(index)
-            .map(|value| value.as_ref())
-            .unwrap_or("Unknown");
+        let name = database.tags.get(tag).unwrap_or("Unknown");
 
         if args.verbose {
             println!("  {} ({})", name, tag);
@@ -103,14 +97,7 @@ pub fn execute(args: InspectArgs) -> Result<()> {
 
     println!("Sources:");
     for &source in &entity.sources {
-        let index = source.as_usize();
-
-        let name = database
-            .sources
-            .values()
-            .get(index)
-            .map(|value| value.as_ref())
-            .unwrap_or("Unknown");
+        let name = database.sources.get(source).unwrap_or("Unknown");
 
         if args.verbose {
             println!("  {} ({})", name, source);

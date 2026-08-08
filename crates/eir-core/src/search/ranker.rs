@@ -107,12 +107,15 @@ mod tests {
     fn exact_alias_beats_fuzzy() {
         let ranker = Ranker::new();
 
+        let entity_1 = EntityID::new(1);
+        let entity_2 = EntityID::new(2);
+
         let results = ranker.rank(vec![
-            (EntityID(1), SearchSource::FuzzyAlias, fuzzy("Appl")),
-            (EntityID(2), SearchSource::ExactAlias, exact("Apple")),
+            (entity_1, SearchSource::FuzzyAlias, fuzzy("Appl")),
+            (entity_2, SearchSource::ExactAlias, exact("Apple")),
         ]);
 
-        assert_eq!(results[0].entity_id, EntityID(2));
+        assert_eq!(results[0].entity_id, entity_2);
         assert_eq!(results[0].score, 1.0);
     }
 
@@ -120,12 +123,15 @@ mod tests {
     fn multiple_signals_add_bonus() {
         let ranker = Ranker::new();
 
+        let entity = EntityID::new(1);
+        let tag = TagID::new(1);
+
         let results = ranker.rank(vec![
-            (EntityID(1), SearchSource::Token, token("apple")),
+            (entity, SearchSource::Token, token("apple")),
             (
-                EntityID(1),
+                entity,
                 SearchSource::Tag,
-                SearchExplanation::Tag { tag: TagID(1) },
+                SearchExplanation::Tag { tag: tag },
             ),
         ]);
 
@@ -135,16 +141,19 @@ mod tests {
 
     #[test]
     fn attribute_key_value_beats_attribute_value() {
+        let entity_1 = EntityID::new(1);
+        let entity_2 = EntityID::new(2);
+
         let candidates = vec![
             (
-                EntityID(1),
+                entity_1,
                 SearchSource::AttributeValue,
                 SearchExplanation::AttributeValue {
                     term: "milk".into(),
                 },
             ),
             (
-                EntityID(2),
+                entity_2,
                 SearchSource::AttributeKeyValue,
                 SearchExplanation::AttributeKeyValue {
                     key: "brand".into(),
@@ -155,6 +164,6 @@ mod tests {
 
         let results = Ranker::new().rank(candidates);
 
-        assert_eq!(results[0].entity_id, EntityID(2));
+        assert_eq!(results[0].entity_id, entity_2);
     }
 }

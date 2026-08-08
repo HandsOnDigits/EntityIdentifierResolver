@@ -1,21 +1,10 @@
 use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
-use serde::{Deserialize, Serialize}; // Bring serde traits into scope
-
-use super::macros::{define_id, define_registry_id};
+use serde::{Deserialize, Serialize};
+use std::fmt;
 
 use crate::utils::normalize;
 
-define_id!(RelationshipTypeID, u16);
-define_id!(TagID, u32);
-define_id!(SourceID, u32);
-define_id!(AttributeKeyID, u32);
-define_id!(EntityID, u64);
-
-define_registry_id!(RelationshipTypeID, u16);
-define_registry_id!(TagID, u32);
-define_registry_id!(SourceID, u32);
-define_registry_id!(AttributeKeyID, u32);
-define_registry_id!(EntityID, u64);
+pub use crate::storage::ids::{AttributeKeyID, EntityID, RelationshipTypeID, SourceID, TagID};
 
 #[derive(
     Archive,
@@ -86,7 +75,6 @@ pub enum Value {
     Integer(i64),
     Float(f64),
     Boolean(bool),
-    Entity(EntityID),
 }
 
 impl Value {
@@ -96,7 +84,6 @@ impl Value {
             Self::Integer(i) => String::into_boxed_str(i.to_string()),
             Self::Float(f) => String::into_boxed_str(f.to_string()),
             Self::Boolean(b) => String::into_boxed_str(b.to_string()),
-            Self::Entity(id) => String::into_boxed_str(id.to_string()),
         }
     }
 
@@ -106,7 +93,6 @@ impl Value {
             Self::Integer(value) => value.to_string(),
             Self::Float(value) => value.to_string(),
             Self::Boolean(value) => value.to_string(),
-            Self::Entity(value) => value.0.to_string(),
         }
     }
 }
@@ -118,7 +104,6 @@ impl std::fmt::Display for Value {
             Self::Integer(value) => write!(f, "{value}"),
             Self::Float(value) => write!(f, "{value}"),
             Self::Boolean(value) => write!(f, "{value}"),
-            Self::Entity(value) => write!(f, "{value}"),
         }
     }
 }
@@ -130,7 +115,6 @@ impl ArchivedValue {
             Self::Integer(value) => value.to_string(),
             Self::Float(value) => value.to_string(),
             Self::Boolean(value) => value.to_string(),
-            Self::Entity(value) => value.0.to_string(),
         }
     }
 }
@@ -147,16 +131,66 @@ impl ArchivedValue {
     PartialEq,
     Eq,
     Hash,
+    PartialOrd,
+    Ord,
 )]
+#[repr(u8)]
 pub enum BuiltInRelationship {
-    IsA,
-    InstanceOf,
-    PartOf,
-    MadeBy,
-    OwnedBy,
-    LocatedIn,
-    SimilarTo,
-    ReplacedBy,
+    IsA = 0,
+    InstanceOf = 1,
+    PartOf = 2,
+    MadeBy = 3,
+    OwnedBy = 4,
+    LocatedIn = 5,
+    SimilarTo = 6,
+    ReplacedBy = 7,
+}
+
+impl BuiltInRelationship {
+    /// Reserved index range for built-in relationships (0..255).
+    pub fn to_id(self) -> RelationshipTypeID {
+        RelationshipTypeID::new(self as usize)
+    }
+
+    /// Convert from a reserved ID back to a built-in relationship, if valid.
+    pub fn from_id(id: RelationshipTypeID) -> Option<Self> {
+        match id.index() {
+            0 => Some(Self::IsA),
+            1 => Some(Self::InstanceOf),
+            2 => Some(Self::PartOf),
+            3 => Some(Self::MadeBy),
+            4 => Some(Self::OwnedBy),
+            5 => Some(Self::LocatedIn),
+            6 => Some(Self::SimilarTo),
+            7 => Some(Self::ReplacedBy),
+            _ => None,
+        }
+    }
+
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::IsA => "is_a",
+            Self::InstanceOf => "instance_of",
+            Self::PartOf => "part_of",
+            Self::MadeBy => "made_by",
+            Self::OwnedBy => "owned_by",
+            Self::LocatedIn => "located_in",
+            Self::SimilarTo => "similar_to",
+            Self::ReplacedBy => "replaced_by",
+        }
+    }
+}
+
+impl fmt::Display for BuiltInRelationship {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+impl AsRef<str> for BuiltInRelationship {
+    fn as_ref(&self) -> &str {
+        self.as_str()
+    }
 }
 
 #[derive(
@@ -177,16 +211,28 @@ pub enum RelationshipType {
     Custom(RelationshipTypeID),
 }
 
+impl RelationshipType {
+    pub fn to_id(&self) -> RelationshipTypeID {
+        match *self {
+            Self::Custom(id) => id,
+            Self::BuiltIn(builtin) => builtin.to_id(),
+        }
+    }
+}
+
 #[derive(
     Archive, RkyvSerialize, RkyvDeserialize, Serialize, Deserialize, Debug, Clone, PartialEq, Eq,
 )]
 pub struct Relationship {
-    pub kind: RelationshipTypeID,
+    pub kind: RelationshipType,
     pub target: EntityID,
 }
 
-impl ArchivedEntityID {
-    pub fn to_native(&self) -> EntityID {
-        EntityID(self.0.into())
+impl std::fmt::Display for RelationshipType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::BuiltIn(builtin) => write!(f, "{}", builtin),
+            Self::Custom(id) => write!(f, "custom:{}", id),
+        }
     }
 }

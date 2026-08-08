@@ -47,9 +47,10 @@ pub fn map(entity: FixtureEntity, ctx: &mut BuilderContext) -> EntityDocument {
             .into_iter()
             .map(|relationship| Relationship {
                 target: relationship.target,
-                kind: ctx
-                    .relationship_types
-                    .intern(&normalize(&relationship.kind)),
+                kind: eir_core::entity::prelude::types::RelationshipType::Custom(
+                    ctx.relationship_types
+                        .intern(&normalize(&relationship.kind)),
+                ),
             })
             .collect(),
 

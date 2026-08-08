@@ -22,7 +22,7 @@ mod tests {
 
     #[test]
     fn fuzzy_alias_adds_candidate() {
-        let entity_id = EntityID(1);
+        let entity_id = EntityID::new(1);
 
         let mut resolver = Resolver::default();
 

@@ -24,8 +24,8 @@ fn tag_adds_candidate() {
 
     let mut resolver = Resolver::default();
 
-    let tag_id = TagID(1);
-    let entity_id = EntityID(1);
+    let tag_id = TagID::new(1);
+    let entity_id = EntityID::new(1);
 
     resolver.register_tag(tag_id, "drink".into());
 

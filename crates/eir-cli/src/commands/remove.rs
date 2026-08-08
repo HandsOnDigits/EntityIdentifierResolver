@@ -12,14 +12,14 @@ pub struct RemoveArgs {
 
     /// Entity IDs to remove
     #[arg(short, long)]
-    pub entity: Vec<u64>,
+    pub entity: Vec<usize>,
 }
 
 pub fn execute(args: RemoveArgs) -> Result<()> {
     let mut database = load_database_owned(&args.database)?;
 
     for id in args.entity {
-        database.remove(EntityID(id))?;
+        database.remove(EntityID::new(id))?;
     }
 
     database.save(&args.database)?;

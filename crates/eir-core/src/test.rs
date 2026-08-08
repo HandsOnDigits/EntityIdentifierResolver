@@ -30,12 +30,12 @@ pub fn fixture_database() -> Database {
     let mut database = Database::default();
 
     database.entities.push(EntityDocument {
-        id: EntityID(1),
+        id: EntityID::new(1),
         aliases: vec!["Nestle".into()],
-        tags: vec![TagID(1)],
+        tags: vec![TagID::new(1)],
         attributes: vec![],
         relationships: vec![],
-        sources: vec![SourceID(1)],
+        sources: vec![SourceID::new(1)],
     });
 
     database

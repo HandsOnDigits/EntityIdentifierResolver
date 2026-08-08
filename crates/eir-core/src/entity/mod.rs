@@ -1,13 +1,10 @@
 pub mod input;
 pub mod loader;
-mod macros;
 mod types;
 
 use rkyv::{Archive, Deserialize, Serialize, bytecheck::CheckBytes};
 
 use types::*;
-
-pub use macros::archived_id_index;
 
 pub mod prelude {
     pub use crate::entity::input;
@@ -15,7 +12,7 @@ pub mod prelude {
     pub mod types {
         pub use crate::entity::types::{
             Alias, Attribute, AttributeKeyID, Date, EntityID, EntityName, Relationship,
-            RelationshipTypeID, SourceID, Tag, TagID, Value,
+            RelationshipType, RelationshipTypeID, SourceID, Tag, TagID, Value,
         };
     }
 

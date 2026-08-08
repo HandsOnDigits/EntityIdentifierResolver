@@ -52,12 +52,16 @@ impl Database {
     }
 
     pub fn insert(&mut self, input: EntityInput) -> Result<()> {
-        if self.entities.iter().any(|e| e.id == EntityID(input.id)) {
+        if self
+            .entities
+            .iter()
+            .any(|e| e.id == EntityID::new(input.id))
+        {
             anyhow::bail!("Entity already exists: {}", input.id);
         }
 
         let entity = EntityDocument {
-            id: EntityID(input.id),
+            id: EntityID::new(input.id),
 
             aliases: input.aliases.into_iter().map(Into::into).collect(),
 
@@ -82,8 +86,10 @@ impl Database {
                 .relationships
                 .into_iter()
                 .map(|relationship| Relationship {
-                    target: EntityID(relationship.target),
-                    kind: self.relationship_types.intern(&relationship.kind),
+                    target: EntityID::new(relationship.target),
+                    kind: RelationshipType::Custom(
+                        self.relationship_types.intern(&relationship.kind),
+                    ),
                 })
                 .collect(),
         };
@@ -105,7 +111,7 @@ impl Database {
         self.entities.retain(|entity| entity.id != id);
 
         if self.entities.len() == before {
-            anyhow::bail!("Entity not found: {}", id);
+            anyhow::bail!("Entity not found: {}", id.index());
         }
 
         self.rebuild_indexes();
@@ -148,10 +154,10 @@ impl Database {
 pub struct DatabaseRecord {
     pub entities: Vec<EntityDocument>,
 
-    pub tags: RegistryRecord<TagID>,
-    pub sources: RegistryRecord<SourceID>,
-    pub attribute_keys: RegistryRecord<AttributeKeyID>,
-    pub relationship_types: RegistryRecord<RelationshipTypeID>,
+    pub tags: RegistryRecord,
+    pub sources: RegistryRecord,
+    pub attribute_keys: RegistryRecord,
+    pub relationship_types: RegistryRecord,
 
     pub indexes: IndexRecord,
 }
@@ -177,8 +183,10 @@ mod tests {
     fn database_stores_entity() {
         let mut database = Database::default();
 
+        let entity_id = EntityID::new(1);
+
         database.entities.push(EntityDocument {
-            id: EntityID(1),
+            id: entity_id,
             aliases: vec!["Chocolate".into()],
             tags: vec![],
             attributes: vec![],
@@ -187,17 +195,19 @@ mod tests {
         });
 
         assert_eq!(database.entities.len(), 1);
-        assert_eq!(database.entities[0].id, EntityID(1));
+        assert_eq!(database.entities[0].id, entity_id);
     }
 
     #[test]
     fn database_finds_entity_by_id() {
         let database = fixture_database();
 
-        let entity = database.entity(EntityID(1));
+        let entity_id = EntityID::new(1);
+
+        let entity = database.entity(entity_id);
 
         assert!(entity.is_some());
-        assert_eq!(entity.unwrap().id, EntityID(1));
+        assert_eq!(entity.unwrap().id, entity_id);
     }
 
     #[test]
@@ -213,7 +223,7 @@ mod tests {
     fn database_missing_entity_returns_none() {
         let database = fixture_database();
 
-        assert!(database.entity(EntityID(999)).is_none());
+        assert!(database.entity(EntityID::new(999)).is_none());
     }
 
     #[test]

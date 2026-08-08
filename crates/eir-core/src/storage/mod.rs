@@ -1,4 +1,5 @@
 mod backend;
+pub mod ids;
 mod indexes;
 mod posting_list;
 pub mod registry;
