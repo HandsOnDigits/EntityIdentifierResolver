@@ -1,7 +1,7 @@
 # Entity-Identifier-Resolver (EIR)
 
 ## Note
-It is in its earliest state; many features are missing or not implementet yes.
+It is in its earliest state; many features are missing or not implemented yet.
 
 # ⚠️Warning⚠️
 EIR is *NOT* encrypted.
