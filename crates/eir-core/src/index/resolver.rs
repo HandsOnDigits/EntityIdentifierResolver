@@ -439,8 +439,8 @@ impl Resolver {
             fuzzy: database.indexes.bk_tree.clone(),
             tokens: database.indexes.inverted.clone(),
 
-            tags: database.indexes.tag.clone(),
-            sources: database.indexes.source.clone(),
+            tags: database.indexes.tags.clone(),
+            sources: database.indexes.sources.clone(),
 
             attribute_lookup: database
                 .attribute_keys
@@ -454,9 +454,9 @@ impl Resolver {
                 .map(|(_, name)| normalize(name))
                 .collect(),
 
-            attribute_keys: database.indexes.attribute_key.clone(),
-            attribute_values: database.indexes.attribute_value.clone(),
-            attribute_pairs: database.indexes.attribute_pair.clone(),
+            attribute_keys: database.indexes.attribute_keys.clone(),
+            attribute_values: database.indexes.attribute_values.clone(),
+            attribute_pairs: database.indexes.attribute_pairs.clone(),
 
             tag_lookup: database
                 .tags
@@ -470,7 +470,7 @@ impl Resolver {
                 .map(|(id, name)| (normalize(name), id))
                 .collect(),
 
-            relationship_targets: database.indexes.relationship.clone(),
+            relationship_targets: database.indexes.relationships.clone(),
 
             relationship_types: database.relationship_types.clone(),
 

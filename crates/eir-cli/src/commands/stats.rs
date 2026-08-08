@@ -10,14 +10,14 @@ pub fn execute(path: std::path::PathBuf) -> anyhow::Result<()> {
     println!("===================");
     println!();
     println!("Entities:           {}", database.entities.len());
-    println!("Tags:               {}", database.indexes.tag.index.len());
+    println!("Tags:               {}", database.indexes.tags.index.len());
     println!(
         "Sources:            {}",
-        database.indexes.source.index.len()
+        database.indexes.sources.index.len()
     );
     println!(
         "attributes:         {}",
-        database.indexes.attribute_key.index.len()
+        database.indexes.attribute_keys.index.len()
     );
     println!(
         "Relationship Types: {}",
@@ -31,8 +31,8 @@ pub fn execute(path: std::path::PathBuf) -> anyhow::Result<()> {
     println!("Trie:        {}", database.indexes.trie.entries.len());
     println!("BK-Tree:     {}", database.indexes.bk_tree.entries.len());
     println!("Tokens:      {}", database.indexes.inverted.index.len());
-    println!("Tags:        {}", database.indexes.tag.index.len());
-    println!("Sources:     {}", database.indexes.source.index.len());
+    println!("Tags:        {}", database.indexes.tags.index.len());
+    println!("Sources:     {}", database.indexes.sources.index.len());
     println!(
         "Relationships: {}",
         database

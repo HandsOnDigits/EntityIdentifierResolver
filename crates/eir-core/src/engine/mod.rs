@@ -1,6 +1,5 @@
 mod builder;
 pub mod database;
-pub mod indexes;
 mod loader;
 mod search;
 

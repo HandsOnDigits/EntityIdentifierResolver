@@ -1,4 +1,4 @@
-use eir_core::{Database, engine::indexes::Indexes, storage::IndexBuilder};
+use eir_core::{Database, storage::IndexBuilder};
 
 use super::{context::BuilderContext, loader::load_entities, mapper, writer::write_database};
 
@@ -15,9 +15,10 @@ pub fn build(
         .map(|entity| mapper::map(entity, &mut ctx))
         .collect::<Vec<_>>();
 
-    let built = IndexBuilder::build(&entities, ctx.attribute_keys.values());
-
-    let indexes = Indexes::from_builder(built);
+    let indexes = IndexBuilder::build(
+        &entities,
+        ctx.attribute_keys.values().map(|value| value.as_ref()),
+    );
 
     let database = Database {
         entities,

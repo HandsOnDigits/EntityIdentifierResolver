@@ -5,10 +5,8 @@ use rkyv::{Archive, Deserialize, Serialize};
 use crate::prelude::{
     entity::prelude::{EntityDocument, input::EntityInput, types::*},
     index::Resolver,
-    storage::{Registry, RegistryRecord},
+    storage::{IndexBuilder, IndexRecord, Indexes, Registry, RegistryRecord},
 };
-
-use super::indexes::*;
 
 use std::path::Path;
 
@@ -25,6 +23,17 @@ pub struct Database {
 }
 
 impl Database {
+    pub fn rebuild_indexes(&mut self) {
+        self.indexes = IndexBuilder::build(
+            &self.entities,
+            self.attribute_keys.iter().map(|(_, value)| value),
+        );
+    }
+
+    pub fn resolver(&self) -> Resolver {
+        Resolver::from_database(self)
+    }
+
     pub fn to_record(&self) -> DatabaseRecord {
         DatabaseRecord {
             entities: self.entities.clone(),
@@ -137,14 +146,6 @@ impl Database {
         Ok(Database::from_record(record))
     }
 
-    pub fn rebuild_indexes(&mut self) {
-        self.indexes = Indexes::build(self);
-    }
-
-    pub fn resolver(&self) -> Resolver {
-        Resolver::from_database(self)
-    }
-
     pub fn entity(&self, id: EntityID) -> Option<&EntityDocument> {
         self.entities.iter().find(|entity| entity.id == id)
     }
@@ -238,5 +239,31 @@ mod tests {
             .expect("archive failed");
 
         assert!(archived.entities.is_empty());
+    }
+
+    #[test]
+    fn database_insert_is_searchable() {
+        let mut database = Database::default();
+
+        database
+            .insert(EntityInput {
+                id: 9100,
+                aliases: vec!["Test Berry".into()],
+                tags: vec![],
+                properties: vec![],
+                relationships: vec![],
+                sources: vec![],
+            })
+            .unwrap();
+
+        assert_eq!(database.entities.len(), 1);
+        assert_eq!(database.entities[0].aliases, vec!["Test Berry".into()]);
+
+        let resolver = database.resolver();
+
+        dbg!(&database.indexes);
+        dbg!(resolver.resolve("Test Berry"));
+
+        assert!(!resolver.resolve("Test Berry").is_empty());
     }
 }

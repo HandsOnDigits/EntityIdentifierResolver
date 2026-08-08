@@ -27,7 +27,8 @@ pub mod prelude {
 
     pub mod storage {
         pub use crate::storage::{
-            IndexBuilder, Indexes, PostingList, PostingListRecord, Registry, RegistryRecord, Store,
+            IndexBuilder, IndexRecord, Indexes, PostingList, PostingListRecord, Registry,
+            RegistryRecord, Store,
         };
     }
 }
