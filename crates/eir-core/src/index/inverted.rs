@@ -1,5 +1,4 @@
 use bytecheck::CheckBytes;
-
 use rkyv::{Archive, Deserialize, Serialize};
 
 use std::collections::HashMap;
@@ -11,22 +10,29 @@ use crate::{
 
 #[derive(Default, Debug, Clone)]
 pub struct InvertedIndex {
-    pub index: HashMap<Alias, Vec<EntityID>>,
+    pub tokens: HashMap<Alias, Vec<EntityID>>,
 }
 
 impl InvertedIndex {
     pub fn insert(&mut self, term: &str, entity_id: EntityID) {
-        self.index
-            .entry(normalize(term))
-            .or_default()
-            .push(entity_id);
+        let normalized = normalize(term);
+
+        self.tokens.entry(normalized).or_default().push(entity_id);
     }
 
     pub fn lookup(&self, term: &str) -> Vec<EntityID> {
-        self.index
+        self.tokens
             .get(&normalize(term))
             .cloned()
             .unwrap_or_default()
+    }
+
+    pub fn len(&self) -> usize {
+        self.tokens.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.tokens.is_empty()
     }
 }
 
@@ -38,17 +44,13 @@ pub struct InvertedIndexRecord {
 impl InvertedIndex {
     pub fn to_record(&self) -> InvertedIndexRecord {
         InvertedIndexRecord {
-            index: self.index.clone(),
+            index: self.tokens.clone(),
         }
     }
 
     pub fn from_record(record: InvertedIndexRecord) -> Self {
         Self {
-            index: record.index,
+            tokens: record.index,
         }
-    }
-
-    pub fn len(&self) -> usize {
-        self.index.len()
     }
 }
