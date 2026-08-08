@@ -266,4 +266,91 @@ mod tests {
 
         assert!(!resolver.resolve("Test Berry").is_empty());
     }
+
+    #[test]
+    fn database_remove_removes_entity_from_search_index() {
+        let mut database = Database::default();
+
+        database
+            .insert(EntityInput {
+                id: 9100,
+                aliases: vec!["Test Berry".into()],
+                tags: vec![],
+                properties: vec![],
+                relationships: vec![],
+                sources: vec![],
+            })
+            .unwrap();
+
+        assert!(!database.resolver().resolve("Test Berry").is_empty());
+
+        database.remove(EntityID::new(9100)).unwrap();
+
+        assert!(database.entity(EntityID::new(9100)).is_none());
+        assert!(database.resolver().resolve("Test Berry").is_empty());
+    }
+
+    #[test]
+    fn database_remove_persists_across_reload() {
+        let mut database = Database::default();
+
+        database
+            .insert(EntityInput {
+                id: 9100,
+                aliases: vec!["Test Berry".into()],
+                tags: vec![],
+                properties: vec![],
+                relationships: vec![],
+                sources: vec![],
+            })
+            .unwrap();
+
+        database.remove(EntityID::new(9100)).unwrap();
+
+        let path = std::env::temp_dir().join("eir-test-remove.eir");
+        database.save(&path).unwrap();
+
+        let loaded = Database::load(&path).unwrap();
+
+        assert!(loaded.entity(EntityID::new(9100)).is_none());
+        assert!(loaded.resolver().resolve("Test Berry").is_empty());
+
+        std::fs::remove_file(path).ok();
+    }
+
+    #[test]
+    fn database_remove_preserves_other_entities_in_search_index() {
+        let mut database = Database::default();
+
+        database
+            .insert(EntityInput {
+                id: 9100,
+                aliases: vec!["Test Berry".into()],
+                tags: vec![],
+                properties: vec![],
+                relationships: vec![],
+                sources: vec![],
+            })
+            .unwrap();
+
+        database
+            .insert(EntityInput {
+                id: 9101,
+                aliases: vec!["Test Berry Plus".into()],
+                tags: vec![],
+                properties: vec![],
+                relationships: vec![],
+                sources: vec![],
+            })
+            .unwrap();
+
+        database.remove(EntityID::new(9100)).unwrap();
+
+        let resolver = database.resolver();
+
+        let results = resolver.search("Test Berry Plus");
+
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].entity.id, EntityID::new(9101));
+    }
 }
