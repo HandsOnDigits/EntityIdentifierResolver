@@ -234,6 +234,7 @@ dependencies = [
  "rkyv",
  "roaring",
  "serde",
+ "serde_json",
 ]
 
 [[package]]

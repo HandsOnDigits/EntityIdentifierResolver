@@ -1,4 +1,4 @@
-use eir_core::{Database, storage::IndexBuilder};
+use eir_core::{Database, engine::indexes::Indexes, storage::IndexBuilder};
 
 use super::{context::BuilderContext, loader::load_entities, mapper, writer::write_database};
 
@@ -15,30 +15,17 @@ pub fn build(
         .map(|entity| mapper::map(entity, &mut ctx))
         .collect::<Vec<_>>();
 
-    let attribute_keys = ctx.attribute_keys.into_inner();
+    let built = IndexBuilder::build(&entities, ctx.attribute_keys.values());
 
-    let indexes = IndexBuilder::build(&entities, &attribute_keys);
+    let indexes = Indexes::from_builder(built);
 
     let database = Database {
         entities,
-
-        tags: ctx.tags.into_inner(),
-        sources: ctx.sources.into_inner(),
-        attribute_keys,
-
-        alias_index: indexes.alias.to_record(),
-        trie_index: indexes.trie.to_record(),
-        bk_tree_index: indexes.bk_tree.to_record(),
-        inverted_index: indexes.inverted.to_record(),
-
-        attribute_key_index: indexes.attribute_keys.to_record(),
-        attribute_value_index: indexes.attribute_values.to_record(),
-        attribute_pair_index: indexes.attribute_pairs.to_record(),
-
-        tag_index: indexes.tags.to_record(),
-        source_index: indexes.sources.to_record(),
-        relationship_index: indexes.relationships.to_record(),
-        relationship_types: ctx.relationship_types.to_record(),
+        tags: ctx.tags,
+        sources: ctx.sources,
+        attribute_keys: ctx.attribute_keys,
+        relationship_types: ctx.relationship_types,
+        indexes,
     };
 
     write_database(database, output)?;

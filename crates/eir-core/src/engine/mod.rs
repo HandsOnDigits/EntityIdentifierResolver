@@ -1,10 +1,11 @@
 mod builder;
 pub mod database;
+pub mod indexes;
 mod loader;
 mod search;
 
 pub use builder::EngineBuilder;
-pub use database::Database;
+pub use database::{Database, DatabaseRecord};
 pub use loader::{load_database, load_database_owned};
 
 use std::path::Path;

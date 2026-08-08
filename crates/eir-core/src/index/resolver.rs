@@ -22,6 +22,7 @@ pub struct AttributeQuery<'a> {
     pub value: &'a str,
 }
 
+#[derive(Clone)]
 pub struct Resolver {
     documents: HashMap<EntityID, EntityDocument>,
 
@@ -49,6 +50,50 @@ pub struct Resolver {
     ranker: Ranker,
 }
 
+// Getters
+impl Resolver {
+    pub fn alias(&self) -> &AliasIndex {
+        &self.alias
+    }
+
+    pub fn trie(&self) -> &TrieIndex {
+        &self.trie
+    }
+
+    pub fn fuzzy_index(&self) -> &BKTreeIndex {
+        &self.fuzzy
+    }
+
+    pub fn tokens(&self) -> &InvertedIndex {
+        &self.tokens
+    }
+
+    pub fn tags(&self) -> &PostingList<TagID> {
+        &self.tags
+    }
+
+    pub fn sources(&self) -> &PostingList<SourceID> {
+        &self.sources
+    }
+
+    pub fn relationship_targets(&self) -> &PostingList<EntityID> {
+        &self.relationship_targets
+    }
+
+    pub fn attribute_keys(&self) -> &InvertedIndex {
+        &self.attribute_keys
+    }
+
+    pub fn attribute_values(&self) -> &InvertedIndex {
+        &self.attribute_values
+    }
+
+    pub fn attribute_pairs(&self) -> &InvertedIndex {
+        &self.attribute_pairs
+    }
+}
+
+// Logic
 impl Resolver {
     pub fn new() -> Self {
         Self::default()
@@ -389,45 +434,44 @@ impl Resolver {
                 .map(|entity| (entity.id, entity.clone()))
                 .collect(),
 
-            alias: AliasIndex::from_record(database.alias_index.clone()),
-            trie: TrieIndex::from_record(database.trie_index.clone()),
-            fuzzy: BKTreeIndex::from_record(database.bk_tree_index.clone()),
-            tokens: InvertedIndex::from_record(database.inverted_index.clone()),
+            alias: database.indexes.alias.clone(),
+            trie: database.indexes.trie.clone(),
+            fuzzy: database.indexes.bk_tree.clone(),
+            tokens: database.indexes.inverted.clone(),
 
-            tags: PostingList::from_archive(database.tag_index.clone()),
-            sources: PostingList::from_archive(database.source_index.clone()),
+            tags: database.indexes.tag.clone(),
+            sources: database.indexes.source.clone(),
 
             attribute_lookup: database
                 .attribute_keys
                 .iter()
                 .enumerate()
-                .map(|(id, key)| (normalize(key), AttributeKeyID::from_usize(id)))
+                .map(|(id, name)| (normalize(name).into(), AttributeKeyID(id as u32)))
                 .collect(),
 
-            attribute_names: database.attribute_keys.clone(),
+            attribute_names: database.attribute_keys.iter().map(|v| v.into()).collect(),
 
-            attribute_keys: InvertedIndex::from_record(database.attribute_key_index.clone()),
-
-            attribute_values: InvertedIndex::from_record(database.attribute_value_index.clone()),
-
-            attribute_pairs: InvertedIndex::from_record(database.attribute_pair_index.clone()),
+            attribute_keys: database.indexes.attribute_key.clone(),
+            attribute_values: database.indexes.attribute_value.clone(),
+            attribute_pairs: database.indexes.attribute_pair.clone(),
 
             tag_lookup: database
                 .tags
                 .iter()
                 .enumerate()
-                .map(|(id, tag)| (normalize(tag), TagID::from_usize(id)))
+                .map(|(id, name)| (normalize(name).into(), TagID(id as u32)))
                 .collect(),
 
             source_lookup: database
                 .sources
                 .iter()
                 .enumerate()
-                .map(|(id, source)| (normalize(source), SourceID::from_usize(id)))
+                .map(|(id, name)| (normalize(name).into(), SourceID(id as u32)))
                 .collect(),
 
-            relationship_targets: PostingList::from_archive(database.relationship_index.clone()),
-            relationship_types: Registry::from_record(database.relationship_types.clone()),
+            relationship_targets: database.indexes.relationship.clone(),
+
+            relationship_types: database.relationship_types.clone(),
 
             ranker: Ranker::default(),
         }

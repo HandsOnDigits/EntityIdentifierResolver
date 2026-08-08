@@ -5,7 +5,7 @@ use crate::{
     search::result::{SearchExplanation, SearchHit, SearchSource},
 };
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Ranker;
 
 impl Ranker {

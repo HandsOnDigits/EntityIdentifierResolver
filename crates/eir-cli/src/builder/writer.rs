@@ -1,11 +1,13 @@
-use rkyv::{rancor, to_bytes};
+use std::{fs, path::Path};
 
-use std::fs;
+use rkyv::{rancor::Error, to_bytes};
 
 use eir_core::engine::Database;
 
-pub fn write_database(database: Database, path: impl AsRef<std::path::Path>) -> anyhow::Result<()> {
-    let bytes = to_bytes::<rancor::Error>(&database)?;
+pub fn write_database(database: Database, path: impl AsRef<Path>) -> anyhow::Result<()> {
+    let record = database.to_record();
+
+    let bytes = to_bytes::<Error>(&record)?;
 
     fs::write(path, bytes)?;
 

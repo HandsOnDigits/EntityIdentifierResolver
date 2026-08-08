@@ -6,7 +6,7 @@ use std::collections::HashMap;
 
 use crate::{entity::prelude::types::EntityID, utils::normalize};
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct TrieIndex {
     root: HashMap<Box<str>, Vec<EntityID>>,
 }
@@ -57,5 +57,9 @@ impl TrieIndex {
         }
 
         trie
+    }
+
+    pub fn len(&self) -> usize {
+        self.root.len()
     }
 }

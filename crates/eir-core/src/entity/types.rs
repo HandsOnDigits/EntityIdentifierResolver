@@ -78,18 +78,6 @@ pub struct Attribute {
     pub value: Value,
 }
 
-impl ArchivedValue {
-    pub fn display_value(&self) -> String {
-        match self {
-            Self::String(value) => value.to_string(),
-            Self::Integer(value) => value.to_string(),
-            Self::Float(value) => value.to_string(),
-            Self::Boolean(value) => value.to_string(),
-            Self::Entity(value) => value.0.to_string(),
-        }
-    }
-}
-
 #[derive(
     Archive, RkyvSerialize, RkyvDeserialize, Serialize, Deserialize, Debug, Clone, PartialEq,
 )]
@@ -109,6 +97,40 @@ impl Value {
             Self::Float(f) => String::into_boxed_str(f.to_string()),
             Self::Boolean(b) => String::into_boxed_str(b.to_string()),
             Self::Entity(id) => String::into_boxed_str(id.to_string()),
+        }
+    }
+
+    pub fn display_value(&self) -> String {
+        match self {
+            Self::String(value) => value.to_string(),
+            Self::Integer(value) => value.to_string(),
+            Self::Float(value) => value.to_string(),
+            Self::Boolean(value) => value.to_string(),
+            Self::Entity(value) => value.0.to_string(),
+        }
+    }
+}
+
+impl std::fmt::Display for Value {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::String(value) => write!(f, "{value}"),
+            Self::Integer(value) => write!(f, "{value}"),
+            Self::Float(value) => write!(f, "{value}"),
+            Self::Boolean(value) => write!(f, "{value}"),
+            Self::Entity(value) => write!(f, "{value}"),
+        }
+    }
+}
+
+impl ArchivedValue {
+    pub fn display_value(&self) -> String {
+        match self {
+            Self::String(value) => value.to_string(),
+            Self::Integer(value) => value.to_string(),
+            Self::Float(value) => value.to_string(),
+            Self::Boolean(value) => value.to_string(),
+            Self::Entity(value) => value.0.to_string(),
         }
     }
 }

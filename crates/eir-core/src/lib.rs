@@ -11,14 +11,14 @@ pub mod utils;
 #[cfg(test)]
 pub mod test;
 
-pub use engine::Database;
+pub use engine::{Database, DatabaseRecord};
 pub use storage::{IndexBuilder, Indexes};
 
 pub mod prelude {
     pub use super::entity;
 
     pub mod engine {
-        pub use crate::engine::{Database, Engine, EngineBuilder};
+        pub use crate::engine::{Database, DatabaseRecord, Engine, EngineBuilder};
     }
 
     pub mod index {

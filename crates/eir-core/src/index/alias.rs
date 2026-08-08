@@ -49,4 +49,8 @@ impl AliasIndex {
             entries: record.entries,
         }
     }
+
+    pub fn len(&self) -> usize {
+        self.entries.len()
+    }
 }

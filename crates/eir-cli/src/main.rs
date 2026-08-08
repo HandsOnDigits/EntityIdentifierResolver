@@ -35,7 +35,9 @@ fn main() -> anyhow::Result<()> {
             generate_completions(shell)?;
         }
 
-        Commands::Search(args) => commands::search::execute(args)?,
+        Commands::Search(args) => {
+            commands::search::execute(args)?;
+        }
 
         Commands::Build { input, output } => {
             commands::build::execute(input, output)?;
@@ -47,6 +49,14 @@ fn main() -> anyhow::Result<()> {
 
         Commands::Inspect(args) => {
             commands::inspect::execute(args)?;
+        }
+
+        Commands::Insert(args) => {
+            commands::insert::execute(args)?;
+        }
+
+        Commands::Remove(args) => {
+            commands::remove::execute(args)?;
         }
     }
 

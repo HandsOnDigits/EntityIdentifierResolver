@@ -1,22 +1,21 @@
 use std::{fs, path::Path};
 
-use rkyv::{api::high::access, from_bytes, rancor::Error};
+use crate::engine::database::{Database, DatabaseRecord};
 
-use crate::engine::database::{ArchivedDatabase, Database};
-
-pub fn load_database(path: impl AsRef<Path>) -> anyhow::Result<&'static ArchivedDatabase> {
+pub fn load_database(path: impl AsRef<Path>) -> anyhow::Result<Database> {
     let bytes = std::fs::read(path)?;
 
-    let boxed = bytes.into_boxed_slice();
-    let leaked: &'static [u8] = Box::leak(boxed);
+    let record = rkyv::from_bytes::<DatabaseRecord, rkyv::rancor::Error>(&bytes)?;
 
-    let database = access::<ArchivedDatabase, Error>(leaked)?;
-
-    Ok(database)
+    Ok(Database::from_record(record))
 }
 
 pub fn load_database_owned(path: impl AsRef<Path>) -> anyhow::Result<Database> {
     let bytes = fs::read(path)?;
-    let database = from_bytes::<Database, Error>(&bytes)?;
+
+    let record = rkyv::from_bytes::<DatabaseRecord, rkyv::rancor::Error>(&bytes)?;
+
+    let database = Database::from_record(record);
+
     Ok(database)
 }

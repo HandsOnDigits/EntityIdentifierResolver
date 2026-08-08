@@ -1,7 +1,7 @@
 #[macro_export]
 macro_rules! archived_id_index {
     ($id:expr) => {
-        $id.0.to_native() as usize
+        $id.0 as usize
     };
 }
 

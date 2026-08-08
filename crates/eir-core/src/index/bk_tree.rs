@@ -7,7 +7,7 @@ use crate::{
     utils::normalize,
 };
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct BKTreeIndex {
     root: Vec<(Alias, EntityID)>,
 }
@@ -83,5 +83,9 @@ impl BKTreeIndex {
         }
 
         trie
+    }
+
+    pub fn len(&self) -> usize {
+        self.root.len()
     }
 }

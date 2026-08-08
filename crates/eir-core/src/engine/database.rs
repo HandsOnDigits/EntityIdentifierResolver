@@ -1,39 +1,140 @@
-use rkyv::{Archive, Deserialize, Serialize, bytecheck::CheckBytes};
+use anyhow::Result;
+use bytecheck::CheckBytes;
+use rkyv::{Archive, Deserialize, Serialize};
 
 use crate::prelude::{
-    entity::prelude::{
-        EntityDocument,
-        types::{EntityID, RelationshipTypeID, SourceID, TagID},
-    },
-    index::{AliasIndexRecord, BKTreeIndexRecord, InvertedIndexRecord, Resolver, TrieIndexRecord},
-    storage::{PostingListRecord, RegistryRecord},
+    entity::prelude::{EntityDocument, input::EntityInput, types::*},
+    index::Resolver,
+    storage::{Registry, RegistryRecord},
 };
 
-#[derive(Debug, Archive, Serialize, Deserialize, CheckBytes, Default)]
+use super::indexes::*;
+
+use std::path::Path;
+
+#[derive(Debug, Default)]
 pub struct Database {
     pub entities: Vec<EntityDocument>,
 
-    pub tags: Vec<Box<str>>,
-    pub sources: Vec<Box<str>>,
-    pub attribute_keys: Vec<Box<str>>,
+    pub tags: Registry<TagID>,
+    pub sources: Registry<SourceID>,
+    pub attribute_keys: Registry<AttributeKeyID>,
+    pub relationship_types: Registry<RelationshipTypeID>,
 
-    pub alias_index: AliasIndexRecord,
-    pub trie_index: TrieIndexRecord,
-    pub bk_tree_index: BKTreeIndexRecord,
-    pub inverted_index: InvertedIndexRecord,
-
-    pub attribute_key_index: InvertedIndexRecord,
-    pub attribute_value_index: InvertedIndexRecord,
-    pub attribute_pair_index: InvertedIndexRecord,
-
-    pub tag_index: PostingListRecord<TagID>,
-    pub source_index: PostingListRecord<SourceID>,
-
-    pub relationship_index: PostingListRecord<EntityID>,
-    pub relationship_types: RegistryRecord<RelationshipTypeID>,
+    pub indexes: Indexes,
 }
 
 impl Database {
+    pub fn to_record(&self) -> DatabaseRecord {
+        DatabaseRecord {
+            entities: self.entities.clone(),
+
+            tags: self.tags.to_record(),
+            sources: self.sources.to_record(),
+            attribute_keys: self.attribute_keys.to_record(),
+            relationship_types: self.relationship_types.to_record(),
+
+            indexes: self.indexes.to_record(),
+        }
+    }
+
+    pub fn from_record(record: DatabaseRecord) -> Self {
+        Self {
+            entities: record.entities,
+
+            tags: Registry::from_record(record.tags),
+            sources: Registry::from_record(record.sources),
+            attribute_keys: Registry::from_record(record.attribute_keys),
+            relationship_types: Registry::from_record(record.relationship_types),
+
+            indexes: Indexes::from_record(record.indexes),
+        }
+    }
+
+    pub fn insert(&mut self, input: EntityInput) -> Result<()> {
+        if self.entities.iter().any(|e| e.id == EntityID(input.id)) {
+            anyhow::bail!("Entity already exists: {}", input.id);
+        }
+
+        let entity = EntityDocument {
+            id: EntityID(input.id),
+
+            aliases: input.aliases.into_iter().map(Into::into).collect(),
+
+            tags: input.tags.iter().map(|tag| self.tags.intern(tag)).collect(),
+
+            sources: input
+                .sources
+                .iter()
+                .map(|source| self.sources.intern(&source.provider))
+                .collect(),
+
+            attributes: input
+                .properties
+                .into_iter()
+                .map(|property| Attribute {
+                    key: self.attribute_keys.intern(&property.key),
+                    value: Value::String(property.value),
+                })
+                .collect(),
+
+            relationships: input
+                .relationships
+                .into_iter()
+                .map(|relationship| Relationship {
+                    target: EntityID(relationship.target),
+                    kind: self.relationship_types.intern(&relationship.kind),
+                })
+                .collect(),
+        };
+
+        if self.entities.iter().any(|e| e.id == entity.id) {
+            anyhow::bail!("Entity already exists");
+        }
+
+        self.entities.push(entity);
+
+        self.rebuild_indexes();
+
+        Ok(())
+    }
+
+    pub fn remove(&mut self, id: EntityID) -> anyhow::Result<()> {
+        let before = self.entities.len();
+
+        self.entities.retain(|entity| entity.id != id);
+
+        if self.entities.len() == before {
+            anyhow::bail!("Entity not found: {}", id);
+        }
+
+        self.rebuild_indexes();
+
+        Ok(())
+    }
+
+    pub fn save<P: AsRef<Path>>(&self, path: P) -> Result<()> {
+        let record = self.to_record();
+
+        let bytes = rkyv::to_bytes::<rkyv::rancor::Error>(&record)?;
+
+        std::fs::write(path, bytes)?;
+
+        Ok(())
+    }
+
+    pub fn load<P: AsRef<Path>>(path: P) -> Result<Database> {
+        let bytes = std::fs::read(path)?;
+
+        let record = rkyv::from_bytes::<DatabaseRecord, rkyv::rancor::Error>(&bytes)?;
+
+        Ok(Database::from_record(record))
+    }
+
+    pub fn rebuild_indexes(&mut self) {
+        self.indexes = Indexes::build(self);
+    }
+
     pub fn resolver(&self) -> Resolver {
         Resolver::from_database(self)
     }
@@ -41,6 +142,18 @@ impl Database {
     pub fn entity(&self, id: EntityID) -> Option<&EntityDocument> {
         self.entities.iter().find(|entity| entity.id == id)
     }
+}
+
+#[derive(Debug, Archive, Serialize, Deserialize, CheckBytes)]
+pub struct DatabaseRecord {
+    pub entities: Vec<EntityDocument>,
+
+    pub tags: RegistryRecord<TagID>,
+    pub sources: RegistryRecord<SourceID>,
+    pub attribute_keys: RegistryRecord<AttributeKeyID>,
+    pub relationship_types: RegistryRecord<RelationshipTypeID>,
+
+    pub indexes: IndexRecord,
 }
 
 #[cfg(test)]
@@ -88,18 +201,6 @@ mod tests {
     }
 
     #[test]
-    fn database_serializes() {
-        let database = Database::default();
-
-        let bytes = rkyv::to_bytes::<rkyv::rancor::Error>(&database).expect("serialize failed");
-
-        let archived = rkyv::access::<rkyv::Archived<Database>, rkyv::rancor::Error>(&bytes)
-            .expect("archive failed");
-
-        assert!(archived.entities.is_empty());
-    }
-
-    #[test]
     fn empty_database_resolves_safely() {
         let database = Database::default();
 
@@ -113,5 +214,19 @@ mod tests {
         let database = fixture_database();
 
         assert!(database.entity(EntityID(999)).is_none());
+    }
+
+    #[test]
+    fn database_serializes() {
+        let database = Database::default();
+
+        let record = database.to_record();
+
+        let bytes = rkyv::to_bytes::<rkyv::rancor::Error>(&record).expect("serialize failed");
+
+        let archived = rkyv::access::<rkyv::Archived<DatabaseRecord>, rkyv::rancor::Error>(&bytes)
+            .expect("archive failed");
+
+        assert!(archived.entities.is_empty());
     }
 }

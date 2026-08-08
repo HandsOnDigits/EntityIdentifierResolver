@@ -21,9 +21,9 @@ impl<K> Default for PostingList<K> {
 
 impl<K> PostingList<K>
 where
-    K: Copy + Eq + Hash,
+    K: Copy + Eq + Hash + Clone,
 {
-    pub fn from_archive(archived: PostingListRecord<K>) -> Self {
+    pub fn from_record(archived: PostingListRecord<K>) -> Self {
         let index = archived
             .index
             .into_iter()

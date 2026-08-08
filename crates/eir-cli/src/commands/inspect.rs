@@ -2,8 +2,6 @@ use anyhow::Result;
 use clap::Args;
 use std::path::PathBuf;
 
-use eir_core::entity::archived_id_index;
-
 use eir_core::{engine::load_database, entity::prelude::types::EntityID};
 
 #[derive(Args, Debug)]
@@ -27,46 +25,48 @@ pub fn execute(args: InspectArgs) -> Result<()> {
         .find(|entity| entity.id == args.entity)
         .ok_or_else(|| anyhow::anyhow!("Entity not found"))?;
 
-    println!("Entity: {}", archived_id_index!(entity.id));
+    println!("Entity: {}", entity.id);
     println!();
 
     println!("Names:");
-    for name in entity.aliases.iter() {
+    for name in &entity.aliases {
         println!("  {}", name);
     }
 
     println!();
 
     println!("Tags:");
-    for tag in entity.tags.iter() {
-        let index = archived_id_index!(tag);
+    for &tag in &entity.tags {
+        let index = tag.as_usize();
+        let name = database
+            .tags
+            .values()
+            .get(index)
+            .map(|value| value.as_ref())
+            .unwrap_or("Unknown");
 
         if args.verbose {
-            println!("  {} ({})", database.tags[index], index);
+            println!("  {} ({})", name, tag);
         } else {
-            println!("  {}", database.tags[index]);
+            println!("  {}", name);
         }
     }
 
     println!();
 
     println!("Properties:");
-    for attribute in entity.attributes.iter() {
+    for attribute in &entity.attributes {
         if args.verbose {
-            println!(
-                "  {:?}: {:?}",
-                attribute.value.display_value(),
-                attribute.key
-            );
+            println!("  {:?}: {}", attribute.key, attribute.value);
         } else {
-            println!("{}", attribute.value.display_value());
+            println!("{}", attribute.value);
         }
     }
 
     println!();
 
     println!("Relationships:");
-    for relationship in entity.relationships.iter() {
+    for relationship in &entity.relationships {
         let target = database
             .entities
             .iter()
@@ -74,24 +74,26 @@ pub fn execute(args: InspectArgs) -> Result<()> {
 
         match target {
             Some(target) => {
-                let name = target.aliases.first().map(|x| &**x).unwrap_or("Unknown");
+                let name = target
+                    .aliases
+                    .first()
+                    .map(|x| x.as_ref())
+                    .unwrap_or("Unknown");
 
                 if args.verbose {
                     println!(
                         "  {} -> {} ({})",
-                        archived_id_index!(relationship.kind),
-                        name,
-                        archived_id_index!(relationship.target)
+                        relationship.kind, name, relationship.target
                     );
                 } else {
-                    println!("  {} -> {}", archived_id_index!(relationship.kind), name);
+                    println!("  {} -> {}", relationship.kind, name);
                 }
             }
+
             None => {
                 println!(
                     "  {} -> Unknown ({})",
-                    archived_id_index!(relationship.kind),
-                    archived_id_index!(relationship.target)
+                    relationship.kind, relationship.target
                 );
             }
         }
@@ -100,13 +102,18 @@ pub fn execute(args: InspectArgs) -> Result<()> {
     println!();
 
     println!("Sources:");
-    for source in entity.sources.iter() {
-        let index = archived_id_index!(source);
+    for &source in &entity.sources {
+        let index = source.as_usize();
 
-        let name = &database.sources[index];
+        let name = database
+            .sources
+            .values()
+            .get(index)
+            .map(|value| value.as_ref())
+            .unwrap_or("Unknown");
 
         if args.verbose {
-            println!("  {} ({})", name, index);
+            println!("  {} ({})", name, source);
         } else {
             println!("  {}", name);
         }

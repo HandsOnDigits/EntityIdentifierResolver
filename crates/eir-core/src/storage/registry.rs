@@ -5,7 +5,7 @@ use std::{collections::HashMap, marker::PhantomData, ops::Index};
 
 use crate::utils::normalize;
 
-pub trait RegistryID: Copy {
+pub trait RegistryID: Copy + Eq + std::hash::Hash {
     fn from_index(index: usize) -> Self;
     fn index(self) -> usize;
 }
@@ -89,24 +89,7 @@ impl<ID: RegistryID> Registry<ID> {
     pub fn into_inner(self) -> Vec<Box<str>> {
         self.values
     }
-}
 
-impl<ID: RegistryID> Index<ID> for Registry<ID> {
-    type Output = str;
-
-    fn index(&self, id: ID) -> &Self::Output {
-        &self.values[id.index()]
-    }
-}
-
-#[derive(Debug, Clone, Archive, Serialize, Deserialize, CheckBytes, Default)]
-pub struct RegistryRecord<ID> {
-    pub values: Vec<Box<str>>,
-    #[rkyv(with = rkyv::with::Skip)]
-    pub _phantom: PhantomData<ID>,
-}
-
-impl<ID: RegistryID> Registry<ID> {
     pub fn to_record(&self) -> RegistryRecord<ID> {
         RegistryRecord::<ID> {
             values: self.values.clone(),
@@ -123,6 +106,26 @@ impl<ID: RegistryID> Registry<ID> {
 
         registry
     }
+
+    pub fn values(&self) -> &[Box<str>] {
+        &self.values
+    }
+}
+
+impl<ID: RegistryID> Index<ID> for Registry<ID> {
+    type Output = str;
+
+    fn index(&self, id: ID) -> &Self::Output {
+        &self.values[id.index()]
+    }
+}
+
+#[derive(Debug, Clone, Archive, Serialize, Deserialize, CheckBytes, Default)]
+pub struct RegistryRecord<ID: RegistryID> {
+    pub values: Vec<Box<str>>,
+
+    #[rkyv(with = rkyv::with::Skip)]
+    pub _phantom: PhantomData<ID>,
 }
 
 impl<ID: RegistryID> Default for Registry<ID> {

@@ -1,6 +1,8 @@
 use clap::{Parser, Subcommand, ValueEnum};
 
-use crate::commands::{inspect::InspectArgs, search::SearchArgs};
+use crate::commands::{
+    insert::InsertArgs, inspect::InspectArgs, remove::RemoveArgs, search::SearchArgs,
+};
 
 use std::path::PathBuf;
 
@@ -13,7 +15,7 @@ pub struct Cli {
 
 #[derive(Subcommand, Debug)]
 pub enum Commands {
-    /// Build datasets
+    /// Build database from dataset
     Build {
         /// Input dataset
         #[arg(short, long)]
@@ -32,6 +34,12 @@ pub enum Commands {
 
     /// Search entities
     Search(SearchArgs),
+
+    /// Insert entities into database
+    Insert(InsertArgs),
+
+    /// Remove entities from database
+    Remove(RemoveArgs),
 
     /// Generate shell completions
     Completions { shell: Shell },

@@ -32,19 +32,23 @@ impl InvertedIndex {
 
 #[derive(Archive, Serialize, Deserialize, Debug, Clone, CheckBytes, Default)]
 pub struct InvertedIndexRecord {
-    pub entries: HashMap<Box<str>, Vec<EntityID>>,
+    pub index: HashMap<Box<str>, Vec<EntityID>>,
 }
 
 impl InvertedIndex {
     pub fn to_record(&self) -> InvertedIndexRecord {
         InvertedIndexRecord {
-            entries: self.index.clone(),
+            index: self.index.clone(),
         }
     }
 
     pub fn from_record(record: InvertedIndexRecord) -> Self {
         Self {
-            index: record.entries,
+            index: record.index,
         }
+    }
+
+    pub fn len(&self) -> usize {
+        self.index.len()
     }
 }

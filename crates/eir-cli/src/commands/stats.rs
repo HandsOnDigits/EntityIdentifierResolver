@@ -1,20 +1,24 @@
-use std::fs;
-
-use eir_core::engine::database::ArchivedDatabase;
 use rkyv::{access, rancor::Error};
+use std::fs;
 
 pub fn execute(path: std::path::PathBuf) -> anyhow::Result<()> {
     let bytes = fs::read(path)?;
 
-    let database: &ArchivedDatabase = access::<ArchivedDatabase, Error>(&bytes)?;
+    let database = access::<eir_core::engine::database::ArchivedDatabaseRecord, Error>(&bytes)?;
 
     println!("Database Statistics");
     println!("===================");
     println!();
     println!("Entities:           {}", database.entities.len());
-    println!("Tags:               {}", database.tags.len());
-    println!("Sources:            {}", database.sources.len());
-    println!("attributes:         {}", database.attribute_keys.len());
+    println!("Tags:               {}", database.indexes.tag.index.len());
+    println!(
+        "Sources:            {}",
+        database.indexes.source.index.len()
+    );
+    println!(
+        "attributes:         {}",
+        database.indexes.attribute_key.index.len()
+    );
     println!(
         "Relationship Types: {}",
         database.relationship_types.values.len()
@@ -23,12 +27,12 @@ pub fn execute(path: std::path::PathBuf) -> anyhow::Result<()> {
     println!();
     println!("Indexes");
     println!("-------");
-    println!("Aliases:     {}", database.alias_index.entries.len());
-    println!("Trie:        {}", database.trie_index.entries.len());
-    println!("BK-Tree:     {}", database.bk_tree_index.entries.len());
-    println!("Tokens:      {}", database.inverted_index.entries.len());
-    println!("Tags:        {}", database.tag_index.index.len());
-    println!("Sources:     {}", database.source_index.index.len());
+    println!("Aliases:     {}", database.indexes.alias.entries.len());
+    println!("Trie:        {}", database.indexes.trie.entries.len());
+    println!("BK-Tree:     {}", database.indexes.bk_tree.entries.len());
+    println!("Tokens:      {}", database.indexes.inverted.index.len());
+    println!("Tags:        {}", database.indexes.tag.index.len());
+    println!("Sources:     {}", database.indexes.source.index.len());
     println!(
         "Relationships: {}",
         database

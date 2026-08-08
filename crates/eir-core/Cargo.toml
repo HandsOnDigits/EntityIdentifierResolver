@@ -10,3 +10,4 @@ bytecheck = { workspace = true }
 serde = { workspace = true }
 anyhow = { workspace = true }
 roaring = { workspace = true }
+serde_json = { workspace = true }
