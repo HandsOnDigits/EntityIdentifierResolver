@@ -9,22 +9,41 @@ pub use loader::{load_database, load_database_owned};
 
 use std::path::Path;
 
-use crate::{error::Result, index::Resolver, storage::Backend};
+pub use search::SearchEngine;
+
+use crate::{error::Result, index::Resolver};
 
 pub struct Engine {
-    backend: Backend,
+    database: Database,
     resolver: Resolver,
 }
 
 impl Engine {
     pub fn open(path: impl AsRef<Path>) -> Result<Self> {
-        Ok(Self {
-            backend: Backend::open(path)?,
-            resolver: Resolver::default(),
-        })
+        let database = Database::load(path)?;
+        let resolver = database.resolver();
+
+        Ok(Self { database, resolver })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn engine_is_send_sync() {
+        fn assert_send_sync<T: Send + Sync>() {}
+
+        assert_send_sync::<Engine>();
     }
 
-    pub fn flush(&self) -> Result<()> {
-        self.backend.flush()
+    #[test]
+    fn engine_searches_loaded_database() {
+        let engine = Engine::open("...").unwrap();
+
+        let results = engine.search("Test Berry");
+
+        assert!(!results.is_empty());
     }
 }

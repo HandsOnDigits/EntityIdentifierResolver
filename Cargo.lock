@@ -228,7 +228,6 @@ dependencies = [
 name = "eir-core"
 version = "0.0.0"
 dependencies = [
- "anyhow",
  "bytecheck",
  "chrono",
  "rkyv",

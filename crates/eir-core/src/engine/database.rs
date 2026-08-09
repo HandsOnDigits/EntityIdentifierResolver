@@ -1,4 +1,4 @@
-use anyhow::Result;
+use crate::error::{Error, Result};
 use bytecheck::CheckBytes;
 use rkyv::{Archive, Deserialize, Serialize};
 
@@ -66,7 +66,7 @@ impl Database {
             .iter()
             .any(|e| e.id == EntityID::new(input.id))
         {
-            anyhow::bail!("Entity already exists: {}", input.id);
+            return Err(Error::EntityAlreadyExists(input.id.to_string()));
         }
 
         let entity = EntityDocument {
@@ -104,7 +104,7 @@ impl Database {
         };
 
         if self.entities.iter().any(|e| e.id == entity.id) {
-            anyhow::bail!("Entity already exists");
+            return Err(Error::EntityAlreadyExists(entity.id.index().to_string()));
         }
 
         self.entities.push(entity);
@@ -114,13 +114,13 @@ impl Database {
         Ok(())
     }
 
-    pub fn remove(&mut self, id: EntityID) -> anyhow::Result<()> {
+    pub fn remove(&mut self, id: EntityID) -> Result<()> {
         let before = self.entities.len();
 
         self.entities.retain(|entity| entity.id != id);
 
         if self.entities.len() == before {
-            anyhow::bail!("Entity not found: {}", id.index());
+            return Err(Error::EntityNotFound(id.index()));
         }
 
         self.rebuild_indexes();
@@ -131,7 +131,8 @@ impl Database {
     pub fn save<P: AsRef<Path>>(&self, path: P) -> Result<()> {
         let record = self.to_record();
 
-        let bytes = rkyv::to_bytes::<rkyv::rancor::Error>(&record)?;
+        let bytes = rkyv::to_bytes::<rkyv::rancor::Error>(&record)
+            .map_err(|error| Error::Serialization(error.to_string()))?;
 
         std::fs::write(path, bytes)?;
 
@@ -141,7 +142,8 @@ impl Database {
     pub fn load<P: AsRef<Path>>(path: P) -> Result<Database> {
         let bytes = std::fs::read(path)?;
 
-        let record = rkyv::from_bytes::<DatabaseRecord, rkyv::rancor::Error>(&bytes)?;
+        let record = rkyv::from_bytes::<DatabaseRecord, rkyv::rancor::Error>(&bytes)
+            .map_err(|error| Error::Serialization(error.to_string()))?;
 
         Ok(Database::from_record(record))
     }
@@ -352,5 +354,62 @@ mod tests {
 
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].entity.id, EntityID::new(9101));
+    }
+
+    #[cfg(test)]
+    fn assert_send_sync<T: Send + Sync>() {}
+
+    #[test]
+    fn database_is_send_sync() {
+        assert_send_sync::<Database>();
+    }
+
+    #[test]
+    fn resolver_is_send_sync() {
+        assert_send_sync::<Resolver>();
+    }
+
+    #[test]
+    fn database_supports_concurrent_search() {
+        use std::sync::Arc;
+        use std::thread;
+
+        let mut database = Database::default();
+
+        database
+            .insert(EntityInput {
+                id: 9100,
+                aliases: vec!["Test Berry".into()],
+                tags: vec![],
+                properties: vec![],
+                relationships: vec![],
+                sources: vec![],
+            })
+            .unwrap();
+
+        let resolver = Arc::new(database.resolver());
+
+        // Establish a known-good baseline before spawning threads.
+        let expected = resolver.search("Test Berry");
+
+        assert!(!expected.is_empty());
+
+        let handles = (0..8)
+            .map(|_| {
+                let resolver = Arc::clone(&resolver);
+
+                thread::spawn(move || {
+                    for _ in 0..100 {
+                        let results = resolver.search("Test Berry");
+
+                        assert!(!results.is_empty());
+                    }
+                })
+            })
+            .collect::<Vec<_>>();
+
+        for handle in handles {
+            handle.join().unwrap();
+        }
     }
 }
