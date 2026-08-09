@@ -15,7 +15,7 @@ pub struct Cli {
 
 #[derive(Subcommand, Debug)]
 pub enum Commands {
-    /// Build database from dataset
+    /// Build a database from an entity dataset
     Build {
         /// Input dataset
         #[arg(short, long)]
@@ -27,12 +27,15 @@ pub enum Commands {
     },
 
     /// Show database statistics
-    Stats { input: PathBuf },
+    Stats {
+        /// Database file
+        input: PathBuf,
+    },
 
-    /// Inspect an entity in the database
+    /// Inspect one or more entities form database
     Inspect(InspectArgs),
 
-    /// Search entities
+    /// Search in database
     Search(SearchArgs),
 
     /// Insert entities into database
