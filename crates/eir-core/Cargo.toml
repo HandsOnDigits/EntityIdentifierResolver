@@ -10,3 +10,5 @@ bytecheck = { workspace = true }
 serde = { workspace = true }
 roaring = { workspace = true }
 serde_json = { workspace = true }
+toml = "1.1.4"
+tempfile = "3.27.0"
