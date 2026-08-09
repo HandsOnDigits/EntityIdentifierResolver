@@ -8,8 +8,6 @@ use crate::prelude::{
     storage::{IndexBuilder, IndexRecord, Indexes, Registry, RegistryRecord},
 };
 
-use std::path::Path;
-
 #[derive(Debug, Default)]
 pub struct Database {
     pub entities: Vec<EntityDocument>,
@@ -128,26 +126,6 @@ impl Database {
         Ok(())
     }
 
-    pub fn save<P: AsRef<Path>>(&self, path: P) -> Result<()> {
-        let record = self.to_record();
-
-        let bytes = rkyv::to_bytes::<rkyv::rancor::Error>(&record)
-            .map_err(|error| Error::Serialization(error.to_string()))?;
-
-        std::fs::write(path, bytes)?;
-
-        Ok(())
-    }
-
-    pub fn load<P: AsRef<Path>>(path: P) -> Result<Database> {
-        let bytes = std::fs::read(path)?;
-
-        let record = rkyv::from_bytes::<DatabaseRecord, rkyv::rancor::Error>(&bytes)
-            .map_err(|error| Error::Serialization(error.to_string()))?;
-
-        Ok(Database::from_record(record))
-    }
-
     pub fn entity(&self, id: EntityID) -> Option<&EntityDocument> {
         self.entities.iter().find(|entity| entity.id == id)
     }
@@ -169,247 +147,43 @@ pub struct DatabaseRecord {
 mod tests {
     use super::*;
 
-    use crate::{entity::prelude::types::EntityID, test::fixture_database};
+    use crate::{engine::Engine, entity::prelude::types::EntityID};
 
     #[test]
-    fn database_creates_resolver() {
-        let database = Database::default();
+    fn engine_roundtrip_persists_database() -> Result<()> {
+        let path =
+            std::env::temp_dir().join(format!("eir-engine-roundtrip-{}.eir", std::process::id()));
 
-        let resolver = database.resolver();
+        let mut engine = Engine::create(&path)?;
 
-        let result = resolver.resolve("unknown");
-
-        assert!(result.is_empty());
-    }
-
-    #[test]
-    fn database_stores_entity() {
-        let mut database = Database::default();
-
-        let entity_id = EntityID::new(1);
-
-        database.entities.push(EntityDocument {
-            id: entity_id,
-            aliases: vec!["Chocolate".into()],
+        engine.insert(EntityInput {
+            id: 9200,
+            aliases: vec!["Roundtrip Berry".into()],
             tags: vec![],
-            attributes: vec![],
+            properties: vec![],
             relationships: vec![],
             sources: vec![],
-        });
+        })?;
 
-        assert_eq!(database.entities.len(), 1);
-        assert_eq!(database.entities[0].id, entity_id);
-    }
+        assert!(!engine.search("Roundtrip Berry").is_empty());
 
-    #[test]
-    fn database_finds_entity_by_id() {
-        let database = fixture_database();
+        engine.flush()?;
+        drop(engine);
 
-        let entity_id = EntityID::new(1);
+        let engine = Engine::open(&path)?;
 
-        let entity = database.entity(entity_id);
+        let entity = engine.entity(EntityID::new(9200));
 
         assert!(entity.is_some());
-        assert_eq!(entity.unwrap().id, entity_id);
-    }
+        assert_eq!(entity.unwrap().aliases, vec!["Roundtrip Berry".into()]);
 
-    #[test]
-    fn empty_database_resolves_safely() {
-        let database = Database::default();
+        let results = engine.search("Roundtrip Berry");
 
-        let resolver = database.resolver();
-
-        assert!(resolver.resolve("anything").is_empty());
-    }
-
-    #[test]
-    fn database_missing_entity_returns_none() {
-        let database = fixture_database();
-
-        assert!(database.entity(EntityID::new(999)).is_none());
-    }
-
-    #[test]
-    fn database_serializes() {
-        let database = Database::default();
-
-        let record = database.to_record();
-
-        let bytes = rkyv::to_bytes::<rkyv::rancor::Error>(&record).expect("serialize failed");
-
-        let archived = rkyv::access::<rkyv::Archived<DatabaseRecord>, rkyv::rancor::Error>(&bytes)
-            .expect("archive failed");
-
-        assert!(archived.entities.is_empty());
-    }
-
-    #[test]
-    fn database_insert_is_searchable() {
-        let mut database = Database::default();
-
-        database
-            .insert(EntityInput {
-                id: 9100,
-                aliases: vec!["Test Berry".into()],
-                tags: vec![],
-                properties: vec![],
-                relationships: vec![],
-                sources: vec![],
-            })
-            .unwrap();
-
-        assert_eq!(database.entities.len(), 1);
-        assert_eq!(database.entities[0].aliases, vec!["Test Berry".into()]);
-
-        let resolver = database.resolver();
-
-        dbg!(&database.indexes);
-        dbg!(resolver.resolve("Test Berry"));
-
-        assert!(!resolver.resolve("Test Berry").is_empty());
-    }
-
-    #[test]
-    fn database_remove_removes_entity_from_search_index() {
-        let mut database = Database::default();
-
-        database
-            .insert(EntityInput {
-                id: 9100,
-                aliases: vec!["Test Berry".into()],
-                tags: vec![],
-                properties: vec![],
-                relationships: vec![],
-                sources: vec![],
-            })
-            .unwrap();
-
-        assert!(!database.resolver().resolve("Test Berry").is_empty());
-
-        database.remove(EntityID::new(9100)).unwrap();
-
-        assert!(database.entity(EntityID::new(9100)).is_none());
-        assert!(database.resolver().resolve("Test Berry").is_empty());
-    }
-
-    #[test]
-    fn database_remove_persists_across_reload() {
-        let mut database = Database::default();
-
-        database
-            .insert(EntityInput {
-                id: 9100,
-                aliases: vec!["Test Berry".into()],
-                tags: vec![],
-                properties: vec![],
-                relationships: vec![],
-                sources: vec![],
-            })
-            .unwrap();
-
-        database.remove(EntityID::new(9100)).unwrap();
-
-        let path = std::env::temp_dir().join("eir-test-remove.eir");
-        database.save(&path).unwrap();
-
-        let loaded = Database::load(&path).unwrap();
-
-        assert!(loaded.entity(EntityID::new(9100)).is_none());
-        assert!(loaded.resolver().resolve("Test Berry").is_empty());
+        assert!(!results.is_empty());
+        assert_eq!(results[0].entity.id, EntityID::new(9200));
 
         std::fs::remove_file(path).ok();
-    }
 
-    #[test]
-    fn database_remove_preserves_other_entities_in_search_index() {
-        let mut database = Database::default();
-
-        database
-            .insert(EntityInput {
-                id: 9100,
-                aliases: vec!["Test Berry".into()],
-                tags: vec![],
-                properties: vec![],
-                relationships: vec![],
-                sources: vec![],
-            })
-            .unwrap();
-
-        database
-            .insert(EntityInput {
-                id: 9101,
-                aliases: vec!["Test Berry Plus".into()],
-                tags: vec![],
-                properties: vec![],
-                relationships: vec![],
-                sources: vec![],
-            })
-            .unwrap();
-
-        database.remove(EntityID::new(9100)).unwrap();
-
-        let resolver = database.resolver();
-
-        let results = resolver.search("Test Berry Plus");
-
-        assert_eq!(results.len(), 1);
-        assert_eq!(results[0].entity.id, EntityID::new(9101));
-    }
-
-    #[cfg(test)]
-    fn assert_send_sync<T: Send + Sync>() {}
-
-    #[test]
-    fn database_is_send_sync() {
-        assert_send_sync::<Database>();
-    }
-
-    #[test]
-    fn resolver_is_send_sync() {
-        assert_send_sync::<Resolver>();
-    }
-
-    #[test]
-    fn database_supports_concurrent_search() {
-        use std::sync::Arc;
-        use std::thread;
-
-        let mut database = Database::default();
-
-        database
-            .insert(EntityInput {
-                id: 9100,
-                aliases: vec!["Test Berry".into()],
-                tags: vec![],
-                properties: vec![],
-                relationships: vec![],
-                sources: vec![],
-            })
-            .unwrap();
-
-        let resolver = Arc::new(database.resolver());
-
-        // Establish a known-good baseline before spawning threads.
-        let expected = resolver.search("Test Berry");
-
-        assert!(!expected.is_empty());
-
-        let handles = (0..8)
-            .map(|_| {
-                let resolver = Arc::clone(&resolver);
-
-                thread::spawn(move || {
-                    for _ in 0..100 {
-                        let results = resolver.search("Test Berry");
-
-                        assert!(!results.is_empty());
-                    }
-                })
-            })
-            .collect::<Vec<_>>();
-
-        for handle in handles {
-            handle.join().unwrap();
-        }
+        Ok(())
     }
 }

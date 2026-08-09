@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use clap::Args;
 
-use eir_core::{engine::load_database_owned, entity::loader::load_entities};
+use eir_core::{engine::Engine, entity::loader::load_entities};
 
 #[derive(Args, Debug)]
 pub struct InsertArgs {
@@ -14,15 +14,19 @@ pub struct InsertArgs {
 }
 
 pub fn execute(args: InsertArgs) -> anyhow::Result<()> {
-    let mut database = load_database_owned(&args.database)?;
+    let mut engine = if args.database.exists() {
+        Engine::open(&args.database)?
+    } else {
+        Engine::create(&args.database)?
+    };
 
     let entities = load_entities(&args.input)?;
 
     for entity in entities {
-        database.insert(entity)?;
+        engine.insert(entity)?;
     }
 
-    database.save(&args.database)?;
+    engine.flush()?;
 
     Ok(())
 }

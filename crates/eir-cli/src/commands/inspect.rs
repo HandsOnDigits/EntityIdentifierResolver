@@ -2,10 +2,12 @@ use anyhow::Result;
 use clap::Args;
 use std::path::PathBuf;
 
-use eir_core::{engine::load_database, entity::prelude::types::EntityID};
+use eir_core::engine::Engine;
+use eir_core::entity::prelude::types::EntityID;
 
 #[derive(Args, Debug)]
 pub struct InspectArgs {
+    /// Database file
     pub input: PathBuf,
 
     #[arg(short, long)]
@@ -17,12 +19,11 @@ pub struct InspectArgs {
 }
 
 pub fn execute(args: InspectArgs) -> Result<()> {
-    let database = load_database(&args.input)?;
+    let engine = Engine::open(&args.input)?;
+    let database = engine.database();
 
     let entity = database
-        .entities
-        .iter()
-        .find(|entity| entity.id == args.entity)
+        .entity(args.entity)
         .ok_or_else(|| anyhow::anyhow!("Entity not found"))?;
 
     println!("Entity: {}", entity.id);
@@ -53,7 +54,7 @@ pub fn execute(args: InspectArgs) -> Result<()> {
         if args.verbose {
             println!("  {:?}: {}", attribute.key, attribute.value);
         } else {
-            println!("{}", attribute.value);
+            println!("  {}", attribute.value);
         }
     }
 
@@ -61,10 +62,7 @@ pub fn execute(args: InspectArgs) -> Result<()> {
 
     println!("Relationships:");
     for relationship in &entity.relationships {
-        let target = database
-            .entities
-            .iter()
-            .find(|e| e.id == relationship.target);
+        let target = database.entity(relationship.target);
 
         match target {
             Some(target) => {

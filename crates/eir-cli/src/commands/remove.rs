@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use anyhow::Result;
 use clap::Args;
 
-use eir_core::{engine::load_database_owned, entity::prelude::types::EntityID};
+use eir_core::{engine::Engine, entity::prelude::types::EntityID};
 
 #[derive(Args, Debug)]
 pub struct RemoveArgs {
@@ -16,13 +16,13 @@ pub struct RemoveArgs {
 }
 
 pub fn execute(args: RemoveArgs) -> Result<()> {
-    let mut database = load_database_owned(&args.database)?;
+    let mut engine = Engine::open(&args.database)?;
 
     for id in args.entity {
-        database.remove(EntityID::new(id))?;
+        engine.remove(EntityID::new(id))?;
     }
 
-    database.save(&args.database)?;
+    engine.flush()?;
 
     Ok(())
 }

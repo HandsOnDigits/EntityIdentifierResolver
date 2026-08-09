@@ -2,7 +2,7 @@ use anyhow::Result;
 use clap::Args;
 use std::path::PathBuf;
 
-use eir_core::engine::load_database_owned;
+use eir_core::engine::Engine;
 
 #[derive(Args, Debug)]
 pub struct SearchArgs {
@@ -18,11 +18,9 @@ pub struct SearchArgs {
 }
 
 pub fn execute(args: SearchArgs) -> Result<()> {
-    let database = load_database_owned(&args.input)?;
+    let engine = Engine::open(&args.input)?;
 
-    let resolver = database.resolver();
-
-    let results = resolver.search(&args.query);
+    let results = engine.search(&args.query);
 
     println!("Search: {}", args.query);
     println!();

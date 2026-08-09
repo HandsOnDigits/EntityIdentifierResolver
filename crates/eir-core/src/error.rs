@@ -6,6 +6,8 @@ pub enum Error {
     Serialization(String),
     EntityAlreadyExists(String),
     EntityNotFound(usize),
+    InvalidFormat(String),
+    UnsupportedVersion(u32),
 }
 
 impl fmt::Display for Error {
@@ -20,6 +22,11 @@ impl fmt::Display for Error {
             }
             Self::EntityNotFound(id) => {
                 write!(f, "Entity not found: {id}")
+            }
+
+            Self::InvalidFormat(e) => write!(f, "invalid EIR format: {e}"),
+            Self::UnsupportedVersion(version) => {
+                write!(f, "unsupported EIR format version: {version}")
             }
         }
     }
