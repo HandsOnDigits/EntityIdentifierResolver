@@ -2,7 +2,6 @@ mod candidate;
 mod context;
 mod executor;
 mod operators;
-mod pipeline;
 mod planner;
 mod ranker;
 pub mod result;
