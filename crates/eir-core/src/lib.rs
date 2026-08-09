@@ -9,7 +9,7 @@ pub mod storage;
 pub mod utils;
 
 #[cfg(test)]
-pub mod test;
+pub mod test_utils;
 
 pub use engine::{Database, DatabaseRecord};
 pub use storage::{IndexBuilder, Indexes};
