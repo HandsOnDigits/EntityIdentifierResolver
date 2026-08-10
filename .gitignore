@@ -28,3 +28,5 @@ target
 # Exclute raw database files
 *.bin
 *.eir
+*.deir
+/database
