@@ -70,7 +70,7 @@ impl Database {
         let entity = EntityDocument {
             id: EntityID::new(input.id),
 
-            aliases: input.aliases.into_iter().map(Into::into).collect(),
+            aliases: input.aliases.into_iter().collect(),
 
             tags: input.tags.iter().map(|tag| self.tags.intern(tag)).collect(),
 
