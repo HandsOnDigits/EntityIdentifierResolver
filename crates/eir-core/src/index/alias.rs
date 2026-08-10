@@ -30,6 +30,10 @@ impl AliasIndex {
             .get(&normalize(alias))
             .map(|ids| ids.as_slice())
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
 }
 
 #[derive(Archive, Serialize, Deserialize, CheckBytes, Debug, Clone, Default)]
