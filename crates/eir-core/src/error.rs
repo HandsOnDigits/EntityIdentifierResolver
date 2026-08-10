@@ -8,25 +8,34 @@ pub enum Error {
     EntityNotFound(usize),
     InvalidFormat(String),
     UnsupportedVersion(u32),
+    StorageLimit { max_segments: usize },
 }
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Io(error) => write!(f, "IO error: {error}"),
+
             Self::Serialization(error) => {
                 write!(f, "Serialization error: {error}")
             }
+
             Self::EntityAlreadyExists(id) => {
                 write!(f, "Entity already exists: {id}")
             }
+
             Self::EntityNotFound(id) => {
                 write!(f, "Entity not found: {id}")
             }
 
             Self::InvalidFormat(e) => write!(f, "invalid EIR format: {e}"),
+
             Self::UnsupportedVersion(version) => {
                 write!(f, "unsupported EIR format version: {version}")
+            }
+
+            Self::StorageLimit { max_segments } => {
+                write!(f, "storage segment limit reached: {max_segments}")
             }
         }
     }

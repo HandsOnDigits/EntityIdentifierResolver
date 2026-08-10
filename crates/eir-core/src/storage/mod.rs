@@ -4,6 +4,7 @@ mod indexes;
 mod posting_list;
 pub mod registry;
 pub mod segment;
+mod segment_manager;
 mod store;
 pub mod wal;
 

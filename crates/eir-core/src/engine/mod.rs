@@ -8,6 +8,7 @@ pub use database::{Database, DatabaseRecord};
 use std::path::Path;
 
 use crate::{
+    config::StorageConfig,
     entity::prelude::{EntityDocument, input::EntityInput, types::EntityID},
     search::result::SearchResult,
     storage::Backend,
@@ -25,7 +26,12 @@ pub struct Engine {
 
 impl Engine {
     pub fn create(path: impl AsRef<Path>) -> Result<Self> {
-        let backend = Backend::create(&path)?;
+        let config = StorageConfig {
+            root: path.as_ref().to_path_buf(),
+            ..StorageConfig::default()
+        };
+
+        let backend = Backend::create(config)?;
         let database = Database::default();
         let resolver = database.resolver();
 
@@ -37,8 +43,14 @@ impl Engine {
     }
 
     pub fn open(path: impl AsRef<Path>) -> Result<Self> {
-        let backend = Backend::open(&path)?;
+        let config = StorageConfig {
+            root: path.as_ref().to_path_buf(),
+            ..StorageConfig::default()
+        };
+
+        let backend = Backend::open(config)?;
         let record = backend.read()?;
+
         let database = Database::from_record(record);
         let resolver = database.resolver();
 
@@ -57,7 +69,7 @@ impl Engine {
         self.database.entity(id)
     }
 
-    pub fn flush(&self) -> Result<()> {
+    pub fn flush(&mut self) -> Result<()> {
         self.backend.write(&self.database.to_record())
     }
 
@@ -93,11 +105,11 @@ mod tests {
 
     #[test]
     fn engine_searches_loaded_database() -> Result<()> {
-        let path =
-            std::env::temp_dir().join(format!("eir-engine-search-{}.eir", std::process::id()));
+        let temp = tempfile::tempdir()?;
+        let path = temp.path();
 
         {
-            let mut engine = Engine::create(&path)?;
+            let mut engine = Engine::create(path)?;
 
             engine.insert(EntityInput {
                 id: 9100,
@@ -111,24 +123,24 @@ mod tests {
             engine.flush()?;
         }
 
-        let engine = Engine::open(&path)?;
+        let engine = Engine::open(path)?;
 
         let results = engine.search("Test Berry");
 
         assert!(!results.is_empty());
         assert_eq!(results[0].entity.id, EntityID::new(9100));
 
-        std::fs::remove_file(&path).ok();
+        std::fs::remove_file(path).ok();
 
         Ok(())
     }
 
     #[test]
     fn engine_flushes_database() -> Result<()> {
-        let path =
-            std::env::temp_dir().join(format!("eir-engine-flush-{}.eir", std::process::id()));
+        let temp = tempfile::tempdir()?;
+        let path = temp.path();
 
-        let engine = Engine::create(&path)?;
+        let mut engine = Engine::create(path)?;
 
         engine.flush()?;
 
@@ -141,11 +153,11 @@ mod tests {
 
     #[test]
     fn engine_roundtrip_persists_database() -> Result<()> {
-        let path =
-            std::env::temp_dir().join(format!("eir-engine-roundtrip-{}.eir", std::process::id()));
+        let temp = tempfile::tempdir()?;
+        let path = temp.path();
 
         // Create a new engine/database.
-        let mut engine = Engine::create(&path)?;
+        let mut engine = Engine::create(path)?;
 
         // Insert data into the database.
         engine.insert(EntityInput {
@@ -164,7 +176,7 @@ mod tests {
         drop(engine);
 
         // Reopen from disk.
-        let engine = Engine::open(&path)?;
+        let engine = Engine::open(path)?;
 
         // Verify the entity survived persistence.
         let entity = engine.entity(EntityID::new(9200));

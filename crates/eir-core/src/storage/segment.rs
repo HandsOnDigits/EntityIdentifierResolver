@@ -1,10 +1,9 @@
+use crate::error::{Error, Result};
 use std::{
     fs::File,
     io::{Read, Write},
     path::{Path, PathBuf},
 };
-
-use crate::error::{Error, Result};
 
 const MAGIC: &[u8; 4] = b"EIR\0";
 const FORMAT_VERSION: u32 = 1;
@@ -110,6 +109,14 @@ impl Segment {
         file.read_exact(&mut payload)?;
 
         Ok(payload)
+    }
+
+    pub fn size(&self) -> Result<u64> {
+        match std::fs::metadata(&self.path) {
+            Ok(metadata) => Ok(metadata.len()),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(0),
+            Err(error) => Err(error.into()),
+        }
     }
 }
 

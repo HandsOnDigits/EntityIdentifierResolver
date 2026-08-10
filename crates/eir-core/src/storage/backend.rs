@@ -1,61 +1,29 @@
-use std::path::{Path, PathBuf};
+use crate::{config::StorageConfig, engine::DatabaseRecord, error::Result};
 
-use crate::{
-    engine::DatabaseRecord,
-    error::{Error, Result},
-};
+use super::segment_manager::SegmentManager;
 
 pub struct Backend {
-    path: PathBuf,
+    segments: SegmentManager,
 }
 
 impl Backend {
-    pub fn create(path: impl AsRef<Path>) -> Result<Self> {
-        let path = path.as_ref();
+    pub fn create(config: StorageConfig) -> Result<Self> {
+        let segments = SegmentManager::create(config)?;
 
-        if let Some(parent) = path.parent() {
-            if !parent.as_os_str().is_empty() {
-                std::fs::create_dir_all(parent)?;
-            }
-        }
-
-        Ok(Self {
-            path: path.to_path_buf(),
-        })
+        Ok(Self { segments })
     }
 
-    pub fn open(path: impl AsRef<Path>) -> Result<Self> {
-        let path = path.as_ref();
+    pub fn open(config: StorageConfig) -> Result<Self> {
+        let segments = SegmentManager::open(config)?;
 
-        if !path.exists() {
-            return Err(Error::Io(std::io::Error::new(
-                std::io::ErrorKind::NotFound,
-                format!("database does not exist: {}", path.display()),
-            )));
-        }
-
-        Ok(Self {
-            path: path.to_path_buf(),
-        })
+        Ok(Self { segments })
     }
 
-    pub fn path(&self) -> &Path {
-        &self.path
+    pub fn write(&mut self, record: &DatabaseRecord) -> Result<()> {
+        self.segments.write_record(record)
     }
 
     pub fn read(&self) -> Result<DatabaseRecord> {
-        let bytes = std::fs::read(&self.path)?;
-
-        rkyv::from_bytes::<DatabaseRecord, rkyv::rancor::Error>(&bytes)
-            .map_err(|error| Error::Serialization(error.to_string()))
-    }
-
-    pub fn write(&self, record: &DatabaseRecord) -> Result<()> {
-        let bytes = rkyv::to_bytes::<rkyv::rancor::Error>(record)
-            .map_err(|error| Error::Serialization(error.to_string()))?;
-
-        std::fs::write(&self.path, bytes)?;
-
-        Ok(())
+        self.segments.read_record()
     }
 }
