@@ -40,10 +40,12 @@ impl Engine {
             ..StorageConfig::default()
         };
 
-        let backend = Backend::create(config)?;
+        let backend = Backend::create(config.clone())?;
 
         // The .eir file is the logical database identity.
         std::fs::File::create(&paths.database)?;
+
+        Config { storage: config }.save()?;
 
         let database = Database::default();
         let resolver = database.resolver();

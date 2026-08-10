@@ -1,7 +1,7 @@
 [
   {
     "id": 9100,
-    "names": ["Test Berry"],
+    "aliases": ["Test Berry"],
     "tags": ["test"],
     "sources": [
       {
