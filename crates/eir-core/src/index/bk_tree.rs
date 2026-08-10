@@ -36,6 +36,10 @@ impl BKTreeIndex {
             .map(|(key, entity)| (key.clone(), vec![*entity]))
             .collect()
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
 }
 
 fn levenshtein(a: &str, b: &str) -> usize {
