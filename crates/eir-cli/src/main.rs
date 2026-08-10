@@ -20,7 +20,7 @@ fn generate_completions(shell: Shell) -> std::io::Result<()> {
         Shell::Bash => generate(Bash, &mut cmd, "eir", &mut stdout),
         Shell::Zsh => generate(Zsh, &mut cmd, "eir", &mut stdout),
         Shell::Fish => generate(Fish, &mut cmd, "eir", &mut stdout),
-        Shell::PowerShell => generate(PowerShell, &mut cmd, "eir", &mut stdout),
+        Shell::Power => generate(PowerShell, &mut cmd, "eir", &mut stdout),
         Shell::Elvish => generate(Elvish, &mut cmd, "eir", &mut stdout),
     }
 
@@ -57,6 +57,10 @@ fn main() -> anyhow::Result<()> {
 
         Commands::Remove(args) => {
             commands::remove::execute(args)?;
+        }
+
+        Commands::Server(_args) => {
+            todo!("Server is not yet setup");
         }
     }
 
