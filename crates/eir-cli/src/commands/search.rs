@@ -6,8 +6,8 @@ use eir_core::engine::Engine;
 
 #[derive(Args, Debug)]
 pub struct SearchArgs {
-    /// Database file
-    pub input: PathBuf,
+    /// Database directory
+    pub database: PathBuf,
 
     /// Search query
     pub query: String,
@@ -18,7 +18,7 @@ pub struct SearchArgs {
 }
 
 pub fn execute(args: SearchArgs) -> Result<()> {
-    let engine = Engine::open(&args.input)?;
+    let engine = Engine::open(&args.database)?;
 
     let results = engine.search(&args.query);
 
