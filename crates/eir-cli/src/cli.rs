@@ -2,6 +2,7 @@ use clap::{Parser, Subcommand, ValueEnum};
 
 use crate::commands::{
     insert::InsertArgs, inspect::InspectArgs, remove::RemoveArgs, search::SearchArgs,
+    server::ServerArgs,
 };
 
 use std::path::PathBuf;
@@ -44,6 +45,9 @@ pub enum Commands {
     /// Remove entities from database
     Remove(RemoveArgs),
 
+    /// Manage the EIR server
+    Server(ServerArgs),
+
     /// Generate shell completions
     Completions { shell: Shell },
 }
@@ -51,8 +55,13 @@ pub enum Commands {
 #[derive(Clone, ValueEnum, Debug)]
 pub enum Shell {
     Bash,
+
     Zsh,
+
     Fish,
-    PowerShell,
+
+    #[value(name = "powershell")]
+    Power,
+
     Elvish,
 }
