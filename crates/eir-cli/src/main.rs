@@ -35,16 +35,20 @@ fn main() -> anyhow::Result<()> {
             generate_completions(shell)?;
         }
 
+        Commands::Init { parent, name } => {
+            commands::init::execute(commands::init::InitArgs { parent, name })?;
+        }
+
         Commands::Search(args) => {
             commands::search::execute(args)?;
         }
 
-        Commands::Build { input, output } => {
-            commands::build::execute(input, output)?;
+        Commands::Build { input, database } => {
+            commands::build::execute(input, database)?;
         }
 
-        Commands::Stats { input } => {
-            commands::stats::execute(input)?;
+        Commands::Stats(args) => {
+            commands::stats::execute(args)?;
         }
 
         Commands::Inspect(args) => {
