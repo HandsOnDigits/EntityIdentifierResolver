@@ -3,6 +3,9 @@
 ## Note
 It is in its earliest state; many features are missing or not implemented yet.
 
+## Status
+CLI: *functional and tested. Storage: functional and tested. Search: functional and tested. Server: CLI placeholder only.*
+
 # ⚠️Warning⚠️
 EIR is *NOT* encrypted.
 Do *NOT* use it to store sensitive data!
