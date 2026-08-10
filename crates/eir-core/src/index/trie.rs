@@ -35,6 +35,10 @@ impl TrieIndex {
             .map(|(key, value)| (key.clone(), value.clone()))
             .collect()
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
 }
 
 #[derive(Archive, Serialize, Deserialize, Debug, Clone, CheckBytes, Default)]
