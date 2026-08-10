@@ -36,7 +36,7 @@ mod tests {
         index::Resolver,
         query::{Query, QueryIntent},
         search::{SearchPlan, SearchStage, candidate::CandidateSet},
-        test::test_entity,
+        test_utils::test_entity,
     };
 
     #[test]
