@@ -1,7 +1,11 @@
 #[cfg(test)]
 use std::path::Path;
 
-use crate::{DatabaseRecord, config::StorageConfig, error::Error, error::Result};
+use crate::{
+    DatabaseRecord,
+    config::StorageConfig,
+    error::{Error, Result},
+};
 
 use super::segment::Segment;
 
@@ -157,16 +161,20 @@ impl SegmentManager {
 mod tests {
     use super::*;
 
+    fn test_config(root: &Path, max_segment_size: u64, max_segments: usize) -> StorageConfig {
+        StorageConfig {
+            name: "test".into(),
+            root: root.to_path_buf(),
+            max_segment_size,
+            max_segments,
+        }
+    }
+
     #[test]
     fn manager_creates_first_segment() -> Result<()> {
         let temp = tempfile::tempdir()?;
 
-        let config = StorageConfig {
-            root: temp.path().to_path_buf(),
-            max_segment_size: 1024,
-            max_segments: 4,
-        };
-
+        let config = test_config(temp.path(), 1024, 4);
         let manager = SegmentManager::create(config)?;
 
         assert_eq!(
@@ -181,12 +189,7 @@ mod tests {
     fn manager_rotates_segment() -> Result<()> {
         let temp = tempfile::tempdir()?;
 
-        let config = StorageConfig {
-            root: temp.path().to_path_buf(),
-            max_segment_size: 1024,
-            max_segments: 4,
-        };
-
+        let config = test_config(temp.path(), 1024, 4);
         let mut manager = SegmentManager::create(config)?;
 
         assert_eq!(manager.active_id(), 1);
@@ -222,11 +225,7 @@ mod tests {
     fn manager_opens_existing_segments() -> Result<()> {
         let temp = tempfile::tempdir()?;
 
-        let config = StorageConfig {
-            root: temp.path().to_path_buf(),
-            max_segment_size: 1024,
-            max_segments: 4,
-        };
+        let config = test_config(temp.path(), 1024, 4);
 
         let mut manager = SegmentManager::create(config.clone())?;
 
@@ -247,12 +246,7 @@ mod tests {
     fn manager_rejects_rotation_at_segment_limit() -> Result<()> {
         let temp = tempfile::tempdir()?;
 
-        let config = StorageConfig {
-            root: temp.path().to_path_buf(),
-            max_segment_size: 1024,
-            max_segments: 2,
-        };
-
+        let config = test_config(temp.path(), 1024, 2);
         let mut manager = SegmentManager::create(config)?;
 
         manager.rotate()?;
@@ -275,10 +269,7 @@ mod tests {
     fn manager_read_empty_segment_returns_not_found() -> Result<()> {
         let temp = tempfile::tempdir()?;
 
-        let config = StorageConfig {
-            root: temp.path().to_path_buf(),
-            ..StorageConfig::default()
-        };
+        let config = test_config(temp.path(), 64 * 1024 * 1024, 16);
 
         let manager = SegmentManager::create(config)?;
 
