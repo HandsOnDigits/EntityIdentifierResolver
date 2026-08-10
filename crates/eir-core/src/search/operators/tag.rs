@@ -19,7 +19,7 @@ fn tag_adds_candidate() {
         index::Resolver,
         query::Query,
         search::{CandidateSet, context::SearchContext},
-        test::test_entity_with_tag,
+        test_utils::test_entity_with_tag,
     };
 
     let mut resolver = Resolver::default();
