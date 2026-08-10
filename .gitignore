@@ -28,4 +28,3 @@ target
 # Exclute raw database files
 *.bin
 *.eir
-**/tests
