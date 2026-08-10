@@ -128,11 +128,7 @@ mod tests {
 
         let results = ranker.rank(vec![
             (entity, SearchSource::Token, token("apple")),
-            (
-                entity,
-                SearchSource::Tag,
-                SearchExplanation::Tag { tag: tag },
-            ),
+            (entity, SearchSource::Tag, SearchExplanation::Tag { tag }),
         ]);
 
         assert_eq!(results.len(), 1);
