@@ -24,6 +24,10 @@ impl StorageConfig {
     pub fn segment_path(&self) -> PathBuf {
         self.root.join("segments")
     }
+
+    pub fn wal_path(&self) -> PathBuf {
+        self.root.join("wal.eir")
+    }
 }
 
 impl Default for StorageConfig {
