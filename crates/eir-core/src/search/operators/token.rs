@@ -17,7 +17,7 @@ mod tests {
         index::Resolver,
         query::Query,
         search::{CandidateSet, context::SearchContext},
-        test::test_entity,
+        test_utils::test_entity,
     };
 
     #[test]
