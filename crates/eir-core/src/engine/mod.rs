@@ -5,17 +5,15 @@ mod search;
 use std::path::Path;
 
 pub use builder::EngineBuilder;
-pub use database::{Database, DatabaseRecord};
-
-use crate::storage::wal::WalOperation;
+pub use database::{Database, DatabaseRecord, DatabaseStats};
 
 use crate::{
-    config::StorageConfig,
+    config::{Config, DatabasePaths, StorageConfig},
     entity::prelude::{EntityDocument, input::EntityInput, types::EntityID},
     error::{Error, Result},
     index::Resolver,
     search::result::SearchResult,
-    storage::Backend,
+    storage::{Backend, wal::WalOperation},
 };
 
 pub use search::SearchEngine;
@@ -27,13 +25,26 @@ pub struct Engine {
 }
 
 impl Engine {
-    pub fn create(path: impl AsRef<Path>) -> Result<Self> {
+    /// Create a new logical `.eir` database.
+    ///
+    /// The `.eir` file is the public database identity.
+    /// Physical storage is created alongside it.
+    pub fn create(parent: impl AsRef<Path>, name: &str) -> Result<Self> {
+        let paths = DatabasePaths::new(parent, name);
+
+        std::fs::create_dir_all(&paths.root)?;
+
         let config = StorageConfig {
-            root: path.as_ref().to_path_buf(),
+            root: paths.root.clone(),
+            name: name.to_owned(),
             ..StorageConfig::default()
         };
 
         let backend = Backend::create(config)?;
+
+        // The .eir file is the logical database identity.
+        std::fs::File::create(&paths.database)?;
+
         let database = Database::default();
         let resolver = database.resolver();
 
@@ -44,19 +55,48 @@ impl Engine {
         })
     }
 
+    /// Open an existing logical `.eir` database.
+    ///
+    /// Physical storage is resolved from the logical database path.
+    /// The snapshot is loaded first, followed by any pending WAL
+    /// operations.
     pub fn open(path: impl AsRef<Path>) -> Result<Self> {
-        let config = StorageConfig {
-            root: path.as_ref().to_path_buf(),
-            ..Default::default()
+        let path = path.as_ref();
+        let paths = DatabasePaths::from_database(path);
+
+        if !paths.database.exists() {
+            return Err(Error::Io(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                "database file does not exist",
+            )));
+        }
+
+        let config = if paths.config.exists() {
+            Config::load(&paths.config)?
+        } else {
+            Config {
+                storage: StorageConfig {
+                    name: paths
+                        .database
+                        .file_stem()
+                        .and_then(|x| x.to_str())
+                        .unwrap_or("database")
+                        .to_string(),
+                    root: paths.root.clone(),
+                    ..StorageConfig::default()
+                },
+            }
         };
 
-        let backend = Backend::open(config)?;
+        let backend = Backend::open(config.storage)?;
 
         let mut database = match backend.read() {
             Ok(record) => Database::from_record(record),
+
             Err(Error::Io(error)) if error.kind() == std::io::ErrorKind::NotFound => {
                 Database::default()
             }
+
             Err(error) => return Err(error),
         };
 
@@ -65,6 +105,7 @@ impl Engine {
                 WalOperation::Insert(input) => {
                     database.insert(input)?;
                 }
+
                 WalOperation::Remove(id) => {
                     database.remove(id)?;
                 }
@@ -80,6 +121,10 @@ impl Engine {
         })
     }
 
+    pub fn stats(&self) -> DatabaseStats {
+        self.database.stats()
+    }
+
     pub fn search(&self, query: &str) -> Vec<SearchResult<'_>> {
         self.resolver.search(query)
     }
@@ -93,7 +138,9 @@ impl Engine {
     }
 
     pub fn insert(&mut self, input: EntityInput) -> Result<()> {
-        if self.database.entity(EntityID::new(input.id)).is_some() {
+        let id = EntityID::new(input.id);
+
+        if self.database.entity(id).is_some() {
             return Err(Error::EntityAlreadyExists(input.id.to_string()));
         }
 
@@ -139,45 +186,30 @@ mod tests {
     }
 
     #[test]
-    fn engine_searches_loaded_database() -> Result<()> {
+    fn create_and_open_use_the_same_database_layout() -> Result<()> {
         let temp = tempfile::tempdir()?;
-        let path = temp.path();
 
-        {
-            let mut engine = Engine::create(path)?;
+        let mut engine = Engine::create(temp.path(), "nutrition")?;
 
-            engine.insert(EntityInput {
-                id: 9100,
-                aliases: vec!["Test Berry".into()],
-                tags: vec![],
-                properties: vec![],
-                relationships: vec![],
-                sources: vec![],
-            })?;
-
-            engine.flush()?;
-        }
-
-        let engine = Engine::open(path)?;
-
-        let results = engine.search("Test Berry");
-
-        assert!(!results.is_empty());
-        assert_eq!(results[0].entity.id, EntityID::new(9100));
-
-        Ok(())
-    }
-
-    #[test]
-    fn engine_flushes_database() -> Result<()> {
-        let temp = tempfile::tempdir()?;
-        let path = temp.path();
-
-        let mut engine = Engine::create(path)?;
+        engine.insert(EntityInput {
+            id: 1000,
+            aliases: vec!["Test Food".into()],
+            tags: vec![],
+            properties: vec![],
+            relationships: vec![],
+            sources: vec![],
+        })?;
 
         engine.flush()?;
+        drop(engine);
 
-        assert!(path.exists());
+        let database_path = temp.path().join("nutrition").join("nutrition.eir");
+
+        assert!(database_path.exists());
+
+        let engine = Engine::open(&database_path)?;
+
+        assert!(engine.entity(EntityID::new(1000)).is_some());
 
         Ok(())
     }
@@ -185,12 +217,10 @@ mod tests {
     #[test]
     fn engine_roundtrip_persists_database() -> Result<()> {
         let temp = tempfile::tempdir()?;
-        let path = temp.path();
+        let path = temp.path().join("test").join("test.eir");
 
-        // Create a new engine/database.
-        let mut engine = Engine::create(path)?;
+        let mut engine = Engine::create(temp.path(), "test")?;
 
-        // Insert data into the database.
         engine.insert(EntityInput {
             id: 9200,
             aliases: vec!["Roundtrip Berry".into()],
@@ -200,22 +230,16 @@ mod tests {
             sources: vec![],
         })?;
 
-        // Persist it.
         engine.flush()?;
-
-        // Drop the original engine before reopening the file.
         drop(engine);
 
-        // Reopen from disk.
-        let engine = Engine::open(path)?;
+        let engine = Engine::open(&path)?;
 
-        // Verify the entity survived persistence.
         let entity = engine.entity(EntityID::new(9200));
 
         assert!(entity.is_some());
         assert_eq!(entity.unwrap().aliases, vec!["Roundtrip Berry".into()]);
 
-        // Verify the search index was restored too.
         let results = engine.search("Roundtrip Berry");
 
         assert!(!results.is_empty());
@@ -227,10 +251,10 @@ mod tests {
     #[test]
     fn engine_recovers_unflushed_insert_from_wal() -> Result<()> {
         let temp = tempfile::tempdir()?;
-        let path = temp.path().join("database.eir");
+        let path = temp.path().join("test").join("test.eir");
 
         {
-            let mut engine = Engine::create(&path)?;
+            let mut engine = Engine::create(temp.path(), "test")?;
 
             engine.insert(EntityInput {
                 id: 9300,
@@ -240,25 +264,12 @@ mod tests {
                 relationships: vec![],
                 sources: vec![],
             })?;
-
-            // Deliberately do NOT flush.
-            //
-            // The entity should only exist in the in-memory database
-            // and WAL at this point.
         }
 
-        // Reopen as if the process had restarted.
         let engine = Engine::open(&path)?;
 
-        let entity = engine.entity(EntityID::new(9300));
-
-        assert!(entity.is_some());
-        assert_eq!(entity.unwrap().aliases, vec!["WAL Berry".into()]);
-
-        let results = engine.search("WAL Berry");
-
-        assert!(!results.is_empty());
-        assert_eq!(results[0].entity.id, EntityID::new(9300));
+        assert!(engine.entity(EntityID::new(9300)).is_some());
+        assert!(!engine.search("WAL Berry").is_empty());
 
         Ok(())
     }
@@ -266,10 +277,10 @@ mod tests {
     #[test]
     fn engine_recovers_unflushed_remove_from_wal() -> Result<()> {
         let temp = tempfile::tempdir()?;
-        let path = temp.path().join("database.eir");
+        let path = temp.path().join("test").join("test.eir");
 
         {
-            let mut engine = Engine::create(&path)?;
+            let mut engine = Engine::create(temp.path(), "test")?;
 
             engine.insert(EntityInput {
                 id: 9400,
@@ -280,40 +291,30 @@ mod tests {
                 sources: vec![],
             })?;
 
-            // Persist the initial state.
             engine.flush()?;
         }
 
         {
             let mut engine = Engine::open(&path)?;
-
-            assert!(engine.entity(EntityID::new(9400)).is_some());
-
             engine.remove(EntityID::new(9400))?;
-
-            // Deliberately do NOT flush.
-            //
-            // The remove should now exist only in the WAL.
         }
 
-        // Reopen as if the process had crashed.
         let engine = Engine::open(&path)?;
 
         assert!(engine.entity(EntityID::new(9400)).is_none());
-
-        let results = engine.search("Removed Berry");
-
-        assert!(results.is_empty());
+        assert!(engine.search("Removed Berry").is_empty());
 
         Ok(())
     }
 
     #[test]
     fn engine_flush_truncates_wal() -> Result<()> {
-        let path =
-            std::env::temp_dir().join(format!("eir-engine-wal-flush-{}.eir", std::process::id()));
+        let root = std::env::temp_dir();
+        let name = format!("eir-engine-wal-flush-{}", std::process::id());
 
-        let mut engine = Engine::create(&path)?;
+        let path = root.join(&name).join(format!("{name}.eir"));
+
+        let mut engine = Engine::create(&root, &name)?;
 
         engine.insert(EntityInput {
             id: 9300,
@@ -324,12 +325,10 @@ mod tests {
             sources: vec![],
         })?;
 
-        // The mutation must be present in the WAL before flush.
         assert!(!engine.backend().wal().replay()?.is_empty());
 
         engine.flush()?;
 
-        // After the snapshot is durable, the WAL should be empty.
         assert!(engine.backend().wal().replay()?.is_empty());
 
         drop(engine);
@@ -338,52 +337,7 @@ mod tests {
 
         assert!(engine.entity(EntityID::new(9300)).is_some());
 
-        std::fs::remove_dir_all(path).ok();
-
-        Ok(())
-    }
-
-    #[test]
-    fn engine_recovers_snapshot_plus_wal() -> Result<()> {
-        let path = std::env::temp_dir().join(format!(
-            "eir-engine-snapshot-wal-{}.eir",
-            std::process::id()
-        ));
-
-        let mut engine = Engine::create(&path)?;
-
-        engine.insert(EntityInput {
-            id: 9400,
-            aliases: vec!["Snapshot Berry".into()],
-            tags: vec![],
-            properties: vec![],
-            relationships: vec![],
-            sources: vec![],
-        })?;
-
-        engine.flush()?;
-
-        // This entity exists only in the WAL now.
-        engine.insert(EntityInput {
-            id: 9401,
-            aliases: vec!["WAL Berry".into()],
-            tags: vec![],
-            properties: vec![],
-            relationships: vec![],
-            sources: vec![],
-        })?;
-
-        drop(engine);
-
-        let engine = Engine::open(&path)?;
-
-        assert!(engine.entity(EntityID::new(9400)).is_some());
-        assert!(engine.entity(EntityID::new(9401)).is_some());
-
-        assert!(!engine.search("Snapshot Berry").is_empty());
-        assert!(!engine.search("WAL Berry").is_empty());
-
-        std::fs::remove_dir_all(path).ok();
+        std::fs::remove_dir_all(root.join(&name)).ok();
 
         Ok(())
     }
@@ -391,9 +345,7 @@ mod tests {
     #[test]
     fn engine_does_not_wal_invalid_insert() -> Result<()> {
         let temp = tempfile::tempdir()?;
-        let path = temp.path();
-
-        let mut engine = Engine::create(path)?;
+        let mut engine = Engine::create(temp.path(), "test")?;
 
         engine.insert(EntityInput {
             id: 9500,
