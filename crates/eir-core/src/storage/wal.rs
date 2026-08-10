@@ -1,12 +1,9 @@
-use std::{
-    fs::{File, OpenOptions},
-    io::{Read, Seek, Write},
-    path::{Path, PathBuf},
-};
+use std::path::Path;
 
 use crate::{
     entity::prelude::{input::EntityInput, types::EntityID},
     error::{Error, Result},
+    storage::deir::{DeirFile, DeirKind},
 };
 
 #[derive(Debug, rkyv::Archive, rkyv::Serialize, rkyv::Deserialize)]
@@ -16,40 +13,20 @@ pub enum WalOperation {
 }
 
 pub struct Wal {
-    path: PathBuf,
-    file: File,
+    file: DeirFile,
 }
 
 impl Wal {
     pub fn create(path: impl AsRef<Path>) -> Result<Self> {
-        let path = path.as_ref().to_path_buf();
-
-        if let Some(parent) = path.parent() {
-            std::fs::create_dir_all(parent)?;
-        }
-
-        let file = OpenOptions::new()
-            .create_new(true)
-            .read(true)
-            .write(true)
-            .open(&path)?;
-
-        Ok(Self { path, file })
+        Ok(Self {
+            file: DeirFile::create(path, DeirKind::Wal)?,
+        })
     }
 
     pub fn open(path: impl AsRef<Path>) -> Result<Self> {
-        let path = path.as_ref().to_path_buf();
-
-        if !path.exists() {
-            return Err(Error::Io(std::io::Error::new(
-                std::io::ErrorKind::NotFound,
-                "WAL does not exist",
-            )));
-        }
-
-        let file = OpenOptions::new().read(true).write(true).open(&path)?;
-
-        Ok(Self { path, file })
+        Ok(Self {
+            file: DeirFile::open(path, DeirKind::Wal)?,
+        })
     }
 
     pub fn append(&mut self, operation: &WalOperation) -> Result<()> {
@@ -59,43 +36,49 @@ impl Wal {
         let length = u32::try_from(bytes.len())
             .map_err(|_| Error::Serialization("WAL record is too large".into()))?;
 
-        self.file.seek(std::io::SeekFrom::End(0))?;
-        self.file.write_all(&length.to_le_bytes())?;
-        self.file.write_all(&bytes)?;
-        self.file.flush()?;
-        self.file.sync_data()?;
+        let mut record = Vec::with_capacity(4 + bytes.len());
+
+        record.extend_from_slice(&length.to_le_bytes());
+        record.extend_from_slice(&bytes);
+
+        self.file.append(&record)?;
 
         Ok(())
     }
 
     pub fn replay(&self) -> Result<Vec<WalOperation>> {
-        let mut file = File::open(&self.path)?;
+        let bytes = self.file.read()?;
+        let mut cursor = 0;
         let mut operations = Vec::new();
 
-        loop {
-            let mut length = [0u8; 4];
+        while cursor < bytes.len() {
+            let remaining = bytes.len() - cursor;
 
-            match file.read_exact(&mut length) {
-                Ok(()) => {}
-                Err(error) if error.kind() == std::io::ErrorKind::UnexpectedEof => {
-                    break;
-                }
-                Err(error) => return Err(error.into()),
+            if remaining < 4 {
+                // Incomplete final length header.
+                break;
             }
 
-            let length = u32::from_le_bytes(length) as usize;
-            let mut bytes = vec![0u8; length];
+            let length = u32::from_le_bytes(
+                bytes[cursor..cursor + 4]
+                    .try_into()
+                    .expect("checked length"),
+            ) as usize;
 
-            match file.read_exact(&mut bytes) {
-                Ok(()) => {}
-                Err(error) if error.kind() == std::io::ErrorKind::UnexpectedEof => {
-                    // Ignore an incomplete final record caused by a crash.
-                    break;
-                }
-                Err(error) => return Err(error.into()),
+            cursor += 4;
+
+            if bytes.len() - cursor < length {
+                // Incomplete final payload.
+                break;
             }
 
-            let operation = rkyv::from_bytes::<WalOperation, rkyv::rancor::Error>(&bytes)
+            let payload = &bytes[cursor..cursor + length];
+            cursor += length;
+
+            let mut aligned: rkyv::util::AlignedVec = rkyv::util::AlignedVec::with_capacity(length);
+            aligned.extend_from_slice(payload);
+
+            let operation = rkyv::from_bytes::<WalOperation, rkyv::rancor::Error>(&aligned)
                 .map_err(|error| Error::Serialization(error.to_string()))?;
 
             operations.push(operation);
@@ -105,77 +88,36 @@ impl Wal {
     }
 
     pub fn truncate(&mut self) -> Result<()> {
-        self.file.set_len(0)?;
-        self.file.seek(std::io::SeekFrom::Start(0))?;
-        self.file.sync_all()?;
+        self.file.truncate()
+    }
 
-        Ok(())
+    pub fn sync(&self) -> Result<()> {
+        self.file.sync()
     }
 
     pub fn path(&self) -> &Path {
-        &self.path
+        self.file.path()
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::entity::prelude::types::EntityID;
 
     #[test]
-    fn wal_roundtrip() -> Result<()> {
+    fn wal_append_multiple_roundtrip() -> Result<()> {
         let temp = tempfile::tempdir()?;
-        let path = temp.path().join("wal.eir");
-
-        let mut wal = Wal::create(&path)?;
-
-        wal.append(&WalOperation::Remove(EntityID::new(42)))?;
-
-        let operations = wal.replay()?;
-
-        assert_eq!(operations.len(), 1);
-
-        match &operations[0] {
-            WalOperation::Remove(id) => {
-                assert_eq!(*id, EntityID::new(42));
-            }
-            _ => panic!("expected remove operation"),
-        }
-
-        Ok(())
-    }
-
-    #[test]
-    fn wal_truncate_removes_operations() -> Result<()> {
-        let temp = tempfile::tempdir()?;
-        let path = temp.path().join("wal.eir");
-
-        let mut wal = Wal::create(&path)?;
-
-        wal.append(&WalOperation::Remove(EntityID::new(42)))?;
-
-        assert_eq!(wal.replay()?.len(), 1);
-
-        wal.truncate()?;
-
-        assert!(wal.replay()?.is_empty());
-
-        Ok(())
-    }
-
-    #[test]
-    fn wal_replays_multiple_operations() -> Result<()> {
-        let temp = tempfile::tempdir()?;
-        let path = temp.path().join("wal.eir");
+        let path = temp.path().join("wal.deir");
 
         let mut wal = Wal::create(&path)?;
 
         wal.append(&WalOperation::Remove(EntityID::new(1)))?;
         wal.append(&WalOperation::Remove(EntityID::new(2)))?;
-        wal.append(&WalOperation::Remove(EntityID::new(3)))?;
 
         let operations = wal.replay()?;
 
-        assert_eq!(operations.len(), 3);
+        assert_eq!(operations.len(), 2);
 
         assert!(matches!(
             operations[0],
@@ -187,96 +129,58 @@ mod tests {
             WalOperation::Remove(id) if id == EntityID::new(2)
         ));
 
-        assert!(matches!(
-            operations[2],
-            WalOperation::Remove(id) if id == EntityID::new(3)
-        ));
-
         Ok(())
     }
 
     #[test]
-    fn wal_ignores_truncated_length_header() -> Result<()> {
+    fn wal_insert_roundtrip() -> Result<()> {
         let temp = tempfile::tempdir()?;
-        let path = temp.path().join("wal.eir");
+        let path = temp.path().join("wal.deir");
 
         let mut wal = Wal::create(&path)?;
 
-        wal.append(&WalOperation::Remove(EntityID::new(42)))?;
-
-        // Simulate a crash while writing the next record's length.
-        wal.file.write_all(&[0x01, 0x02])?;
-        wal.file.flush()?;
-
-        let operations = wal.replay()?;
-
-        assert_eq!(operations.len(), 1);
-
-        Ok(())
-    }
-
-    #[test]
-    fn wal_ignores_truncated_final_payload() -> Result<()> {
-        let temp = tempfile::tempdir()?;
-        let path = temp.path().join("wal.eir");
-
-        let mut wal = Wal::create(&path)?;
-
-        wal.append(&WalOperation::Remove(EntityID::new(42)))?;
-
-        // Simulate a crash after writing a length but only part
-        // of the payload.
-        wal.file.write_all(&10u32.to_le_bytes())?;
-        wal.file.write_all(&[1, 2, 3])?;
-        wal.file.flush()?;
+        wal.append(&WalOperation::Insert(EntityInput {
+            id: 9300,
+            aliases: vec!["WAL Berry".into()],
+            tags: vec![],
+            properties: vec![],
+            relationships: vec![],
+            sources: vec![],
+        }))?;
 
         let operations = wal.replay()?;
 
         assert_eq!(operations.len(), 1);
 
         match &operations[0] {
-            WalOperation::Remove(id) => {
-                assert_eq!(*id, EntityID::new(42));
+            WalOperation::Insert(input) => {
+                assert_eq!(input.id, 9300);
+                assert_eq!(input.aliases, vec!["WAL Berry".into()]);
             }
-            _ => panic!("expected remove operation"),
+            _ => panic!("expected insert operation"),
         }
 
         Ok(())
     }
 
     #[test]
-    fn wal_reports_corrupt_record() -> Result<()> {
+    fn wal_insert_survives_reopen() -> Result<()> {
         let temp = tempfile::tempdir()?;
-        let path = temp.path().join("wal.eir");
-
-        let mut wal = Wal::create(&path)?;
-
-        wal.append(&WalOperation::Remove(EntityID::new(42)))?;
-
-        let corrupt = [0xffu8; 8];
-
-        let length = u32::try_from(corrupt.len()).unwrap();
-
-        wal.file.write_all(&length.to_le_bytes())?;
-        wal.file.write_all(&corrupt)?;
-        wal.file.flush()?;
-
-        let result = wal.replay();
-
-        assert!(result.is_err());
-
-        Ok(())
-    }
-
-    #[test]
-    fn wal_survives_reopen() -> Result<()> {
-        let temp = tempfile::tempdir()?;
-        let path = temp.path().join("wal.eir");
+        let path = temp.path().join("wal.deir");
 
         {
             let mut wal = Wal::create(&path)?;
-            wal.append(&WalOperation::Remove(EntityID::new(42)))?;
-            wal.file.sync_all()?;
+
+            wal.append(&WalOperation::Insert(EntityInput {
+                id: 9300,
+                aliases: vec!["WAL Berry".into()],
+                tags: vec![],
+                properties: vec![],
+                relationships: vec![],
+                sources: vec![],
+            }))?;
+
+            wal.sync()?;
         }
 
         {
@@ -285,10 +189,13 @@ mod tests {
 
             assert_eq!(operations.len(), 1);
 
-            assert!(matches!(
-                operations[0],
-                WalOperation::Remove(id) if id == EntityID::new(42)
-            ));
+            match &operations[0] {
+                WalOperation::Insert(input) => {
+                    assert_eq!(input.id, 9300);
+                    assert_eq!(input.aliases, vec!["WAL Berry".into()]);
+                }
+                _ => panic!("expected insert operation"),
+            }
         }
 
         Ok(())

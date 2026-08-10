@@ -63,7 +63,7 @@ impl Store {
         let bytes = rkyv::to_bytes::<rkyv::rancor::Error>(&record)
             .map_err(|error| Error::Serialization(error.to_string()))?;
 
-        let segment = Segment::create(&self.path);
+        let segment = Segment::create(&self.path)?;
 
         segment.write(&bytes)?;
 
