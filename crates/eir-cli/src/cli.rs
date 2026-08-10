@@ -2,9 +2,8 @@ use clap::{Parser, Subcommand, ValueEnum};
 
 use crate::commands::{
     insert::InsertArgs, inspect::InspectArgs, remove::RemoveArgs, search::SearchArgs,
-    server::ServerArgs,
+    server::ServerArgs, stats::StatsArgs,
 };
-
 use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
@@ -16,24 +15,30 @@ pub struct Cli {
 
 #[derive(Subcommand, Debug)]
 pub enum Commands {
+    /// Initialize an empty EIR database
+    Init {
+        /// Parent directory for the database
+        parent: PathBuf,
+
+        /// Database name
+        name: String,
+    },
+
     /// Build a database from an entity dataset
     Build {
         /// Input dataset
         #[arg(short, long)]
         input: PathBuf,
 
-        /// Output database
+        /// Database directory
         #[arg(short, long)]
-        output: PathBuf,
+        database: PathBuf,
     },
 
     /// Show database statistics
-    Stats {
-        /// Database file
-        input: PathBuf,
-    },
+    Stats(StatsArgs),
 
-    /// Inspect one or more entities form database
+    /// Inspect one or more entities from database
     Inspect(InspectArgs),
 
     /// Search in database
