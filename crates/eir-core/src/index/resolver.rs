@@ -225,7 +225,7 @@ impl Resolver {
     }
 
     pub fn register_relationship_type(&mut self, name: &str) -> RelationshipTypeID {
-        self.relationship_types.intern(name.into())
+        self.relationship_types.intern(name)
     }
 
     pub fn relationship_type_id(&self, name: &str) -> Option<RelationshipTypeID> {
@@ -359,8 +359,8 @@ impl Resolver {
                     id,
                     SearchSource::AttributeKeyValue,
                     SearchExplanation::AttributeKeyValue {
-                        key: key.clone().into(),
-                        value: value.clone().into(),
+                        key: key.clone(),
+                        value: value.clone(),
                     },
                 ));
             }
@@ -445,7 +445,7 @@ impl Resolver {
             attribute_lookup: database
                 .attribute_keys
                 .iter()
-                .map(|(id, name)| (normalize(name).into(), id))
+                .map(|(id, name)| (normalize(name), id))
                 .collect(),
 
             attribute_names: database
@@ -474,7 +474,7 @@ impl Resolver {
 
             relationship_types: database.relationship_types.clone(),
 
-            ranker: Ranker::default(),
+            ranker: Ranker,
         }
     }
 }
@@ -505,7 +505,7 @@ impl Default for Resolver {
             relationship_targets: PostingList::<EntityID>::default(),
             relationship_types: Registry::<RelationshipTypeID>::default(),
 
-            ranker: Ranker::default(),
+            ranker: Ranker,
         }
     }
 }
