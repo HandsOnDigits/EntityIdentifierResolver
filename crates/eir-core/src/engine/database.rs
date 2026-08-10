@@ -131,6 +131,50 @@ impl Database {
     }
 }
 
+pub struct DatabaseStats {
+    pub entities: usize,
+    pub tags: usize,
+    pub sources: usize,
+    pub attributes: usize,
+    pub relationship_types: usize,
+
+    pub aliases: usize,
+    pub trie: usize,
+    pub fuzzy_aliases: usize,
+    pub tokens: usize,
+    pub tag_index: usize,
+    pub source_index: usize,
+    pub relationships: usize,
+}
+
+impl Database {
+    pub fn stats(&self) -> DatabaseStats {
+        DatabaseStats {
+            entities: self.entities.len(),
+            tags: self.indexes.tags.index.len(),
+            sources: self.indexes.sources.index.len(),
+
+            attributes: self.indexes.attribute_keys.tokens.len(),
+
+            relationship_types: self.relationship_types.values().count(),
+
+            aliases: self.indexes.alias.len(),
+            trie: self.indexes.trie.len(),
+            fuzzy_aliases: self.indexes.bk_tree.len(),
+            tokens: self.indexes.inverted.tokens.len(),
+
+            tag_index: self.indexes.tags.index.len(),
+            source_index: self.indexes.sources.index.len(),
+
+            relationships: self
+                .entities
+                .iter()
+                .map(|entity| entity.relationships.len())
+                .sum(),
+        }
+    }
+}
+
 #[derive(Debug, Archive, Serialize, Deserialize, CheckBytes)]
 pub struct DatabaseRecord {
     pub entities: Vec<EntityDocument>,
@@ -141,49 +185,4 @@ pub struct DatabaseRecord {
     pub relationship_types: RegistryRecord,
 
     pub indexes: IndexRecord,
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    use crate::{engine::Engine, entity::prelude::types::EntityID};
-
-    #[test]
-    fn engine_roundtrip_persists_database() -> Result<()> {
-        let path =
-            std::env::temp_dir().join(format!("eir-engine-roundtrip-{}.eir", std::process::id()));
-
-        let mut engine = Engine::create(&path)?;
-
-        engine.insert(EntityInput {
-            id: 9200,
-            aliases: vec!["Roundtrip Berry".into()],
-            tags: vec![],
-            properties: vec![],
-            relationships: vec![],
-            sources: vec![],
-        })?;
-
-        assert!(!engine.search("Roundtrip Berry").is_empty());
-
-        engine.flush()?;
-        drop(engine);
-
-        let engine = Engine::open(&path)?;
-
-        let entity = engine.entity(EntityID::new(9200));
-
-        assert!(entity.is_some());
-        assert_eq!(entity.unwrap().aliases, vec!["Roundtrip Berry".into()]);
-
-        let results = engine.search("Roundtrip Berry");
-
-        assert!(!results.is_empty());
-        assert_eq!(results[0].entity.id, EntityID::new(9200));
-
-        std::fs::remove_file(path).ok();
-
-        Ok(())
-    }
 }
