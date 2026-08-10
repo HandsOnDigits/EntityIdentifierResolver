@@ -14,17 +14,19 @@ pub struct InsertArgs {
 }
 
 pub fn execute(args: InsertArgs) -> anyhow::Result<()> {
-    let mut engine = if args.database.exists() {
-        Engine::open(&args.database)?
-    } else {
-        Engine::create(&args.database)?
-    };
+    let mut engine = Engine::open(&args.database)?;
 
     let entities = load_entities(&args.input)?;
 
     for entity in entities {
+        println!("Inserting: {} {:?}", entity.id, entity.aliases);
         engine.insert(entity)?;
     }
+
+    println!(
+        "Search before flush: {} result(s)",
+        engine.search("Test Berry").len()
+    );
 
     engine.flush()?;
 
