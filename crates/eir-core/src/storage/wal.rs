@@ -143,7 +143,7 @@ mod tests {
             id: 9300,
             aliases: vec!["WAL Berry".into()],
             tags: vec![],
-            properties: vec![],
+            attributes: vec![],
             relationships: vec![],
             sources: vec![],
         }))?;
@@ -175,7 +175,7 @@ mod tests {
                 id: 9300,
                 aliases: vec!["WAL Berry".into()],
                 tags: vec![],
-                properties: vec![],
+                attributes: vec![],
                 relationships: vec![],
                 sources: vec![],
             }))?;
