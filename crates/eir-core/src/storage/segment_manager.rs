@@ -7,7 +7,10 @@ use crate::{
     error::{Error, Result},
 };
 
-use super::segment::Segment;
+use super::{
+    deir::{DeirFile, DeirKind},
+    segment::Segment,
+};
 
 const SEGMENT_EXTENSION: &str = "deir";
 
@@ -101,8 +104,21 @@ impl SegmentManager {
         Ok(self.active.size()? + payload_len > self.config.max_segment_size)
     }
 
+    fn segment_count(&self) -> Result<usize> {
+        let directory = self.config.segment_path();
+
+        Ok(std::fs::read_dir(directory)?
+            .filter_map(|entry| entry.ok())
+            .filter(|entry| {
+                entry.path().extension().and_then(|x| x.to_str()) == Some(SEGMENT_EXTENSION)
+            })
+            .count())
+    }
+
     pub fn rotate(&mut self) -> Result<()> {
-        if self.active_id as usize >= self.config.max_segments {
+        let segment_count = self.segment_count()?;
+
+        if segment_count >= self.config.max_segments {
             return Err(Error::StorageLimit {
                 max_segments: self.config.max_segments,
             });
@@ -155,11 +171,59 @@ impl SegmentManager {
         rkyv::from_bytes::<DatabaseRecord, rkyv::rancor::Error>(&bytes)
             .map_err(|error| Error::Serialization(error.to_string()))
     }
+
+    pub fn rewrite(&mut self, record: &DatabaseRecord) -> Result<()> {
+        let directory = self.config.segment_path();
+
+        let next_id = self
+            .active_id
+            .checked_add(1)
+            .ok_or_else(|| Error::InvalidFormat("segment ID overflow".into()))?;
+
+        let temp_path = directory.join(format!(".rewrite.{next_id:06}.tmp"));
+        let new_path = directory.join(format!("{next_id:06}.{SEGMENT_EXTENSION}"));
+
+        let bytes = rkyv::to_bytes::<rkyv::rancor::Error>(record)
+            .map_err(|error| Error::Serialization(error.to_string()))?;
+
+        if temp_path.exists() {
+            std::fs::remove_file(&temp_path)?;
+        }
+
+        {
+            let temporary = DeirFile::create(&temp_path, DeirKind::Segment)?;
+            temporary.write(&bytes)?;
+        }
+
+        // The replacement snapshot is completely written before we touch
+        // any existing segment.
+        std::fs::rename(&temp_path, &new_path)?;
+
+        // Remove obsolete segments.
+        for entry in std::fs::read_dir(&directory)? {
+            let entry = entry?;
+            let path = entry.path();
+
+            if path == new_path {
+                continue;
+            }
+
+            if path.extension().and_then(|x| x.to_str()) == Some(SEGMENT_EXTENSION) {
+                std::fs::remove_file(path)?;
+            }
+        }
+
+        self.active = Segment::open(&new_path)?;
+        self.active_id = next_id;
+
+        Ok(())
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::Database;
 
     fn test_config(root: &Path, max_segment_size: u64, max_segments: usize) -> StorageConfig {
         StorageConfig {
@@ -280,6 +344,67 @@ mod tests {
             Err(Error::Io(error))
                 if error.kind() == std::io::ErrorKind::NotFound
         ));
+
+        Ok(())
+    }
+
+    #[test]
+    fn manager_rewrite_replaces_old_segments() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+
+        let config = test_config(temp.path(), 1024 * 1024, 16);
+        let mut manager = SegmentManager::create(config.clone())?;
+
+        manager.write(b"old snapshot")?;
+        manager.rotate()?;
+        manager.write(b"newer snapshot")?;
+
+        assert_eq!(manager.active_id(), 2);
+
+        let database = Database::default();
+        let record = database.to_record();
+
+        manager.rewrite(&record)?;
+
+        assert_eq!(manager.active_id(), 3);
+        assert!(manager.path().exists());
+
+        let segments = std::fs::read_dir(config.segment_path())?
+            .filter_map(|entry| entry.ok())
+            .filter(|entry| {
+                entry.path().extension().and_then(|x| x.to_str()) == Some(SEGMENT_EXTENSION)
+            })
+            .count();
+
+        assert_eq!(segments, 1);
+
+        assert_eq!(manager.read_record()?.entities.len(), record.entities.len());
+
+        Ok(())
+    }
+
+    #[test]
+    fn manager_can_rotate_after_rewrite() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+
+        let config = test_config(temp.path(), 1024 * 1024, 2);
+        let mut manager = SegmentManager::create(config.clone())?;
+
+        manager.rotate()?;
+
+        assert_eq!(manager.active_id(), 2);
+
+        let database = Database::default();
+        manager.rewrite(&database.to_record())?;
+
+        // Rewrite leaves only one physical segment.
+        assert_eq!(manager.active_id(), 3);
+
+        // We should be able to create another segment even though the
+        // sequence number is already greater than max_segments.
+        manager.rotate()?;
+
+        assert_eq!(manager.active_id(), 4);
 
         Ok(())
     }

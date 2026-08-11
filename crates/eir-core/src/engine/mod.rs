@@ -174,11 +174,17 @@ impl Engine {
     pub fn backend(&self) -> &Backend {
         &self.backend
     }
+
+    pub fn compact(&mut self) -> Result<()> {
+        self.backend.compact(&self.database.to_record())
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    use crate::utils::directory_size;
 
     #[test]
     fn engine_is_send_sync() {
@@ -374,6 +380,65 @@ mod tests {
         let operations = engine.backend().wal().replay()?;
 
         assert_eq!(operations.len(), 1);
+
+        Ok(())
+    }
+
+    #[test]
+    fn engine_compact_reduces_storage_after_remove() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let path = temp.path().join("test").join("test.eir");
+
+        let mut engine = Engine::create(temp.path(), "test")?;
+
+        for id in 0..100 {
+            engine.insert(EntityInput {
+                id,
+                aliases: vec!["Entity {id}".into()],
+                tags: vec![],
+                properties: vec![],
+                relationships: vec![],
+                sources: vec![],
+            })?;
+        }
+
+        engine.flush()?;
+
+        let segments_path = temp.path().join("test").join("segments");
+
+        let size_before = directory_size(&segments_path)?;
+
+        // Remove 90% of the entities.
+        for id in 0..90 {
+            engine.remove(EntityID::new(id))?;
+        }
+
+        // The in-memory database should immediately reflect the removals.
+        assert_eq!(engine.stats().entities, 10);
+
+        engine.compact()?;
+
+        let size_after = directory_size(&segments_path)?;
+
+        assert!(
+            size_after < size_before,
+            "compaction should reduce storage size: before={size_before}, after={size_after}"
+        );
+
+        // The compacted database must still reopen correctly.
+        drop(engine);
+
+        let engine = Engine::open(&path)?;
+
+        assert_eq!(engine.stats().entities, 10);
+
+        for id in 0..90 {
+            assert!(engine.entity(EntityID::new(id)).is_none());
+        }
+
+        for id in 90..100 {
+            assert!(engine.entity(EntityID::new(id)).is_some());
+        }
 
         Ok(())
     }

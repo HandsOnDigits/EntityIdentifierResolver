@@ -66,4 +66,10 @@ impl Backend {
     pub fn wal(&self) -> &Wal {
         &self.wal
     }
+
+    pub fn compact(&mut self, record: &DatabaseRecord) -> Result<()> {
+        self.segments.rewrite(record)?;
+        self.wal.truncate()?;
+        Ok(())
+    }
 }

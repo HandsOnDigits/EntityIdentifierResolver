@@ -6,8 +6,10 @@ use eir_core::{
     utils::normalize,
 };
 
-use super::BuilderContext;
-use super::fixture::{FixtureEntity, FixtureSource};
+use super::{
+    BuilderContext,
+    fixture::{FixtureEntity, FixtureSource},
+};
 
 fn map_source(source: FixtureSource, ctx: &mut BuilderContext) -> EntitySource {
     let id = ctx.sources.intern(&source.provider);
@@ -27,11 +29,7 @@ pub fn map(entity: FixtureEntity, ctx: &mut BuilderContext) -> EntityDocument {
 
         aliases: entity.names,
 
-        tags: entity
-            .tags
-            .into_iter()
-            .map(|tag| ctx.tags.intern(&tag))
-            .collect(),
+        tags: entity.tags.iter().map(|tag| ctx.tags.intern(tag)).collect(),
 
         attributes: entity
             .attributes
@@ -57,10 +55,51 @@ pub fn map(entity: FixtureEntity, ctx: &mut BuilderContext) -> EntityDocument {
         sources: entity
             .sources
             .into_iter()
-            .map(|source| {
-                let source = map_source(source, ctx);
-                source.id
-            })
+            .map(|source| map_source(source, ctx).id)
             .collect(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use anyhow::Result;
+
+    use eir_core::entity::prelude::types::EntityID;
+
+    use crate::builder::fixture::FixtureEntity;
+
+    #[test]
+    fn mapper_interns_tags_and_sources() -> Result<()> {
+        let mut ctx = BuilderContext::new();
+
+        let entity = FixtureEntity {
+            id: EntityID::new(9100),
+            names: vec!["Test Berry".into()],
+            tags: vec!["fruit".into(), "berry".into()],
+            sources: vec![FixtureSource {
+                provider: "Test Source".into(),
+                verified: false,
+                created: None,
+                updated: None,
+            }],
+            attributes: vec![],
+            relationships: vec![],
+        };
+
+        let mapped = map(entity, &mut ctx);
+
+        assert_eq!(mapped.id, EntityID::new(9100));
+        assert_eq!(mapped.aliases, ["Test Berry".into()]);
+
+        assert_eq!(mapped.tags.len(), 2);
+        assert_eq!(ctx.tags.get(mapped.tags[0]), Some("fruit"));
+        assert_eq!(ctx.tags.get(mapped.tags[1]), Some("berry"));
+
+        assert_eq!(mapped.sources.len(), 1);
+        assert_eq!(ctx.sources.get(mapped.sources[0]), Some("test source"));
+
+        Ok(())
     }
 }

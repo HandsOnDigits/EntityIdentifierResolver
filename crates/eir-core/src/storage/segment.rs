@@ -37,4 +37,8 @@ impl Segment {
     pub fn size(&self) -> Result<u64> {
         self.file.size()
     }
+
+    pub fn into_file(self) -> DeirFile {
+        self.file
+    }
 }
