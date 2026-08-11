@@ -41,4 +41,8 @@ impl Segment {
     pub fn into_file(self) -> DeirFile {
         self.file
     }
+
+    pub fn append(&self, payload: &[u8]) -> Result<()> {
+        self.file.append(payload)
+    }
 }

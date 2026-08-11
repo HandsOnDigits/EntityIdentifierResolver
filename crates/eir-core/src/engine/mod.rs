@@ -203,7 +203,7 @@ mod tests {
             id: 1000,
             aliases: vec!["Test Food".into()],
             tags: vec![],
-            properties: vec![],
+            attributes: vec![],
             relationships: vec![],
             sources: vec![],
         })?;
@@ -233,7 +233,7 @@ mod tests {
             id: 9200,
             aliases: vec!["Roundtrip Berry".into()],
             tags: vec![],
-            properties: vec![],
+            attributes: vec![],
             relationships: vec![],
             sources: vec![],
         })?;
@@ -268,7 +268,7 @@ mod tests {
                 id: 9300,
                 aliases: vec!["WAL Berry".into()],
                 tags: vec![],
-                properties: vec![],
+                attributes: vec![],
                 relationships: vec![],
                 sources: vec![],
             })?;
@@ -294,7 +294,7 @@ mod tests {
                 id: 9400,
                 aliases: vec!["Removed Berry".into()],
                 tags: vec![],
-                properties: vec![],
+                attributes: vec![],
                 relationships: vec![],
                 sources: vec![],
             })?;
@@ -328,7 +328,7 @@ mod tests {
             id: 9300,
             aliases: vec!["WAL Flush Berry".into()],
             tags: vec![],
-            properties: vec![],
+            attributes: vec![],
             relationships: vec![],
             sources: vec![],
         })?;
@@ -359,7 +359,7 @@ mod tests {
             id: 9500,
             aliases: vec!["Existing Berry".into()],
             tags: vec![],
-            properties: vec![],
+            attributes: vec![],
             relationships: vec![],
             sources: vec![],
         })?;
@@ -370,7 +370,7 @@ mod tests {
                     id: 9500,
                     aliases: vec!["Duplicate Berry".into()],
                     tags: vec![],
-                    properties: vec![],
+                    attributes: vec![],
                     relationships: vec![],
                     sources: vec![],
                 })
@@ -396,7 +396,7 @@ mod tests {
                 id,
                 aliases: vec!["Entity {id}".into()],
                 tags: vec![],
-                properties: vec![],
+                attributes: vec![],
                 relationships: vec![],
                 sources: vec![],
             })?;

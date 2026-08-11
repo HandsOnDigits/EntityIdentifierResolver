@@ -63,6 +63,10 @@ fn main() -> anyhow::Result<()> {
             commands::remove::execute(args)?;
         }
 
+        Commands::Compact(args) => {
+            commands::compact::execute(args)?;
+        }
+
         Commands::Server(_args) => {
             todo!("Server is not yet setup");
         }

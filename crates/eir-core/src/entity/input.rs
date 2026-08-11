@@ -10,7 +10,7 @@ pub struct EntityInput {
 
     pub tags: Vec<Alias>,
 
-    pub properties: Vec<PropertyInput>,
+    pub attributes: Vec<AttributesInput>,
 
     pub relationships: Vec<RelationshipInput>,
 
@@ -18,7 +18,7 @@ pub struct EntityInput {
 }
 
 #[derive(Debug, Clone, Deserialize, rkyv::Archive, rkyv::Serialize, rkyv::Deserialize)]
-pub struct PropertyInput {
+pub struct AttributesInput {
     pub key: Alias,
     pub value: Alias,
 }

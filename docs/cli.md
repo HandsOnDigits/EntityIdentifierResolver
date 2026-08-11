@@ -199,7 +199,7 @@ Test Berry
 Tags:
 test
 
-Properties:
+Attributes:
 
 Relationships:
 
@@ -212,7 +212,7 @@ Inspection displays the entity document stored in the database, including:
 - Entity ID
 - Names and aliases
 - Tags
-- Properties
+- Attributes
 - Relationships
 - Sources
 
@@ -539,7 +539,7 @@ A test entity might contain:
   "id": 9100,
   "aliases": ["Test Berry"],
   "tags": ["test"],
-  "properties": [],
+  "attributes": [],
   "relationships": [],
   "sources": [
     {
@@ -566,7 +566,7 @@ Test Berry
 Tags:
 test
 
-Properties:
+Attributes:
 
 Relationships:
 

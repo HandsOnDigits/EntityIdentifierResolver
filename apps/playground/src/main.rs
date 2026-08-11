@@ -11,14 +11,14 @@ fn main() {
 
     let drink = registry.tags.intern("drink");
     let soft_drink = registry.tags.intern("soft drink");
-    let brand = registry.properties.intern("brand");
+    let brand = registry.attributes.intern("brand");
 
     resolver.add(EntityInput {
         document: EntityDocument {
             id: 1,
             entity_type: *b"PROD",
             sources: vec![],
-            properties: vec![brand],
+            attributes: vec![brand],
         },
         aliases: vec!["Coca Cola".into(), "Coke".into()],
         tags: vec![drink, soft_drink],

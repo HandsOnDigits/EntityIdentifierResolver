@@ -2,7 +2,10 @@ use anyhow::Result;
 use clap::Args;
 use std::path::PathBuf;
 
-use eir_core::engine::Engine;
+use eir_core::{
+    engine::Engine,
+    utils::{directory_size, format_bytes},
+};
 
 #[derive(Args, Debug)]
 pub struct StatsArgs {
@@ -14,6 +17,13 @@ pub fn execute(args: StatsArgs) -> Result<()> {
     let engine = Engine::open(&args.input)?;
 
     let stats = engine.stats();
+
+    let storage_path = args
+        .input
+        .parent()
+        .ok_or_else(|| anyhow::anyhow!("database path has no parent directory"))?;
+
+    let size = directory_size(storage_path)?;
 
     println!("Database Statistics");
     println!("===================");
@@ -35,6 +45,7 @@ pub fn execute(args: StatsArgs) -> Result<()> {
     println!("Tags:          {}", stats.tags);
     println!("Sources:       {}", stats.sources);
     println!("Relationships: {}", stats.relationships);
+    println!("Size:     {}", format_bytes(size));
 
     Ok(())
 }

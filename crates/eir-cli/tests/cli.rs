@@ -56,7 +56,7 @@ fn database_lifecycle() {
     eir()
         .args(["inspect"])
         .arg(&database_file)
-        .args(["--entity", "9100"])
+        .args(["9100"])
         .assert()
         .success()
         .stdout(predicate::str::contains("9100"))
@@ -74,14 +74,14 @@ fn database_lifecycle() {
     eir()
         .args(["remove"])
         .arg(&database_file)
-        .args(["--entity", "9100"])
+        .args(["9100"])
         .assert()
         .success();
 
     eir()
         .args(["inspect"])
         .arg(&database_file)
-        .args(["--entity", "9100"])
+        .args(["9100"])
         .assert()
         .success()
         .stdout(predicate::str::contains("not found"));

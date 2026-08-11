@@ -11,7 +11,7 @@ pub struct InspectArgs {
     pub input: PathBuf,
 
     /// Entity IDs to inspect
-    #[arg(short, long, required = true)]
+    #[arg(required = true)]
     pub entity: Vec<EntityID>,
 
     /// Show internal IDs
@@ -53,7 +53,7 @@ pub fn execute(args: InspectArgs) -> Result<()> {
 
         println!();
 
-        println!("Properties:");
+        println!("Attributes:");
         for attribute in &entity.attributes {
             if args.verbose {
                 println!("  {:?}: {}", attribute.key, attribute.value);

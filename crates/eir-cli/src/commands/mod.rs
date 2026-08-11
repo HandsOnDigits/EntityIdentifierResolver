@@ -1,4 +1,5 @@
 pub mod build;
+pub mod compact;
 pub mod init;
 pub mod insert;
 pub mod inspect;

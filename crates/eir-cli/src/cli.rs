@@ -1,8 +1,8 @@
 use clap::{Parser, Subcommand, ValueEnum};
 
 use crate::commands::{
-    insert::InsertArgs, inspect::InspectArgs, remove::RemoveArgs, search::SearchArgs,
-    server::ServerArgs, stats::StatsArgs,
+    compact::CompactArgs, insert::InsertArgs, inspect::InspectArgs, remove::RemoveArgs,
+    search::SearchArgs, server::ServerArgs, stats::StatsArgs,
 };
 use std::path::PathBuf;
 
@@ -49,6 +49,9 @@ pub enum Commands {
 
     /// Remove entities from database
     Remove(RemoveArgs),
+
+    /// Compact database storage
+    Compact(CompactArgs),
 
     /// Manage the EIR server
     Server(ServerArgs),

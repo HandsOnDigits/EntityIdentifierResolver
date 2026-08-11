@@ -81,7 +81,7 @@ impl Database {
                 .collect(),
 
             attributes: input
-                .properties
+                .attributes
                 .into_iter()
                 .map(|property| Attribute {
                     key: self.attribute_keys.intern(&property.key),
@@ -298,7 +298,7 @@ mod tests {
             id: 1000,
             aliases: vec!["Apple".into()],
             tags: vec![],
-            properties: vec![],
+            attributes: vec![],
             relationships: vec![],
             sources: vec![],
         })?;
@@ -309,7 +309,7 @@ mod tests {
             id: 2000,
             aliases: vec!["Banana".into()],
             tags: vec![],
-            properties: vec![],
+            attributes: vec![],
             relationships: vec![],
             sources: vec![],
         })?;
@@ -333,7 +333,7 @@ mod tests {
             id: 1000,
             aliases: vec!["Apple".into()],
             tags: vec!["fruit".into()],
-            properties: vec![],
+            attributes: vec![],
             relationships: vec![],
             sources: vec![SourceInput {
                 provider: "Source A".into(),
@@ -347,7 +347,7 @@ mod tests {
             id: 2000,
             aliases: vec!["Berry".into()],
             tags: vec!["fruit".into(), "berry".into()],
-            properties: vec![],
+            attributes: vec![],
             relationships: vec![],
             sources: vec![SourceInput {
                 provider: "Source B".into(),
@@ -374,7 +374,7 @@ mod tests {
             id: 1000,
             aliases: vec!["Apple".into()],
             tags: vec!["fruit".into()],
-            properties: vec![],
+            attributes: vec![],
             relationships: vec![],
             sources: vec![],
         })?;
@@ -387,7 +387,7 @@ mod tests {
             id: 1000,
             aliases: vec!["Different Apple".into()],
             tags: vec!["different".into()],
-            properties: vec![],
+            attributes: vec![],
             relationships: vec![],
             sources: vec![],
         })?;

@@ -11,7 +11,6 @@ pub struct RemoveArgs {
     pub database: PathBuf,
 
     /// Entity IDs to remove
-    #[arg(short, long)]
     pub entity: Vec<usize>,
 }
 

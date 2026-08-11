@@ -13,6 +13,7 @@ use super::{
 };
 
 const SEGMENT_EXTENSION: &str = "deir";
+const RECORD_HEADER_SIZE: usize = 8;
 
 pub struct SegmentManager {
     config: StorageConfig,
@@ -141,34 +142,29 @@ impl SegmentManager {
         Ok(())
     }
 
-    pub fn write(&mut self, payload: &[u8]) -> Result<()> {
-        let payload_len = payload.len() as u64;
-
-        if self.should_rotate(payload_len)? {
-            self.rotate()?;
-        }
-
-        self.active.write(payload)
-    }
-
     pub fn write_record(&mut self, record: &DatabaseRecord) -> Result<()> {
         let bytes = rkyv::to_bytes::<rkyv::rancor::Error>(record)
             .map_err(|error| Error::Serialization(error.to_string()))?;
 
-        self.write(&bytes)
+        let framed = Self::encode_record(&bytes)?;
+
+        let framed_len = framed.len() as u64;
+
+        if self.should_rotate(framed_len)? {
+            self.rotate()?;
+        }
+
+        self.active.append(&framed)?;
+
+        Ok(())
     }
 
     pub fn read_record(&self) -> Result<DatabaseRecord> {
         let bytes = self.active.read()?;
 
-        if bytes.is_empty() {
-            return Err(Error::Io(std::io::Error::new(
-                std::io::ErrorKind::NotFound,
-                "database snapshot does not exist",
-            )));
-        }
+        let record = Self::decode_last_record(&bytes)?;
 
-        rkyv::from_bytes::<DatabaseRecord, rkyv::rancor::Error>(&bytes)
+        rkyv::from_bytes::<DatabaseRecord, rkyv::rancor::Error>(record)
             .map_err(|error| Error::Serialization(error.to_string()))
     }
 
@@ -192,7 +188,10 @@ impl SegmentManager {
 
         {
             let temporary = DeirFile::create(&temp_path, DeirKind::Segment)?;
-            temporary.write(&bytes)?;
+
+            let framed = Self::encode_record(&bytes)?;
+
+            temporary.write(&framed)?;
         }
 
         // The replacement snapshot is completely written before we touch
@@ -217,6 +216,67 @@ impl SegmentManager {
         self.active_id = next_id;
 
         Ok(())
+    }
+
+    fn encode_record(payload: &[u8]) -> Result<Vec<u8>> {
+        let len = u64::try_from(payload.len())
+            .map_err(|_| Error::InvalidFormat("snapshot is too large".into()))?;
+
+        let mut framed = Vec::with_capacity(RECORD_HEADER_SIZE + payload.len());
+
+        framed.extend_from_slice(&len.to_le_bytes());
+        framed.extend_from_slice(payload);
+
+        Ok(framed)
+    }
+
+    fn decode_last_record(bytes: &[u8]) -> Result<&[u8]> {
+        if bytes.is_empty() {
+            return Err(Error::Io(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                "database snapshot does not exist",
+            )));
+        }
+
+        let mut offset = 0;
+
+        while offset < bytes.len() {
+            if bytes.len() - offset < RECORD_HEADER_SIZE {
+                return Err(Error::InvalidFormat(
+                    "truncated segment record header".into(),
+                ));
+            }
+
+            let len = u64::from_le_bytes(
+                bytes[offset..offset + RECORD_HEADER_SIZE]
+                    .try_into()
+                    .unwrap(),
+            );
+
+            let len = usize::try_from(len)
+                .map_err(|_| Error::InvalidFormat("snapshot is too large".into()))?;
+
+            let payload_start = offset + RECORD_HEADER_SIZE;
+            let payload_end = payload_start
+                .checked_add(len)
+                .ok_or_else(|| Error::InvalidFormat("snapshot length overflow".into()))?;
+
+            if payload_end > bytes.len() {
+                return Err(Error::InvalidFormat(
+                    "truncated segment record payload".into(),
+                ));
+            }
+
+            offset = payload_end;
+
+            if offset == bytes.len() {
+                return Ok(&bytes[payload_start..payload_end]);
+            }
+        }
+
+        Err(Error::InvalidFormat(
+            "segment contains no complete record".into(),
+        ))
     }
 }
 
@@ -286,27 +346,6 @@ mod tests {
     }
 
     #[test]
-    fn manager_opens_existing_segments() -> Result<()> {
-        let temp = tempfile::tempdir()?;
-
-        let config = test_config(temp.path(), 1024, 4);
-
-        let mut manager = SegmentManager::create(config.clone())?;
-
-        assert!(config.segment_path().exists());
-
-        manager.write(b"hello")?;
-
-        assert!(manager.path().exists());
-
-        let reopened = SegmentManager::open(config)?;
-
-        assert_eq!(reopened.active_id(), manager.active_id());
-
-        Ok(())
-    }
-
-    #[test]
     fn manager_rejects_rotation_at_segment_limit() -> Result<()> {
         let temp = tempfile::tempdir()?;
 
@@ -349,41 +388,6 @@ mod tests {
     }
 
     #[test]
-    fn manager_rewrite_replaces_old_segments() -> Result<()> {
-        let temp = tempfile::tempdir()?;
-
-        let config = test_config(temp.path(), 1024 * 1024, 16);
-        let mut manager = SegmentManager::create(config.clone())?;
-
-        manager.write(b"old snapshot")?;
-        manager.rotate()?;
-        manager.write(b"newer snapshot")?;
-
-        assert_eq!(manager.active_id(), 2);
-
-        let database = Database::default();
-        let record = database.to_record();
-
-        manager.rewrite(&record)?;
-
-        assert_eq!(manager.active_id(), 3);
-        assert!(manager.path().exists());
-
-        let segments = std::fs::read_dir(config.segment_path())?
-            .filter_map(|entry| entry.ok())
-            .filter(|entry| {
-                entry.path().extension().and_then(|x| x.to_str()) == Some(SEGMENT_EXTENSION)
-            })
-            .count();
-
-        assert_eq!(segments, 1);
-
-        assert_eq!(manager.read_record()?.entities.len(), record.entities.len());
-
-        Ok(())
-    }
-
-    #[test]
     fn manager_can_rotate_after_rewrite() -> Result<()> {
         let temp = tempfile::tempdir()?;
 
@@ -405,6 +409,60 @@ mod tests {
         manager.rotate()?;
 
         assert_eq!(manager.active_id(), 4);
+
+        Ok(())
+    }
+
+    #[test]
+    fn manager_appends_snapshots_and_reads_latest() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+
+        let config = test_config(temp.path(), 1024 * 1024, 4);
+        let mut manager = SegmentManager::create(config)?;
+
+        let first = Database::default().to_record();
+
+        manager.write_record(&first)?;
+
+        let first_size = manager.path().metadata()?.len();
+
+        let second = Database::default().to_record();
+
+        manager.write_record(&second)?;
+
+        let second_size = manager.path().metadata()?.len();
+
+        assert!(second_size > first_size);
+
+        let loaded = manager.read_record()?;
+
+        assert_eq!(loaded.entities.len(), second.entities.len());
+
+        Ok(())
+    }
+
+    #[test]
+    fn manager_rewrite_reduces_append_only_storage() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+
+        let config = test_config(temp.path(), 1024 * 1024, 4);
+        let mut manager = SegmentManager::create(config)?;
+
+        let database = Database::default();
+
+        let record = database.to_record();
+
+        manager.write_record(&record)?;
+        manager.write_record(&record)?;
+        manager.write_record(&record)?;
+
+        let before = manager.path().metadata()?.len();
+
+        manager.rewrite(&record)?;
+
+        let after = manager.path().metadata()?.len();
+
+        assert!(after < before);
 
         Ok(())
     }
