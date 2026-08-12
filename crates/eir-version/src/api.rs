@@ -1,60 +1,137 @@
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
-use eir_core::error::Result;
+use eir_core::engine::Engine;
 
-pub struct Merger {
-    left: PathBuf,
-    right: PathBuf,
-}
+use super::{
+    error::{Error, Result},
+    merge::merge_databases,
+    validate::validate_merge_paths,
+};
 
-impl Merger {
-    pub fn new(left: impl AsRef<Path>, right: impl AsRef<Path>) -> Self {
-        Self {
-            left: left.as_ref().to_path_buf(),
-            right: right.as_ref().to_path_buf(),
-        }
-    }
-
-    pub fn merge(&self, output: impl AsRef<Path>) -> Result<MergeReport> {
-        let _output = output.as_ref();
-
-        // Implementation comes next.
-        todo!("merge .eir + .eir")
-    }
-}
-
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct MergeReport {
     pub entities_added: usize,
-    pub entities_combined: usize,
     pub entities_skipped: usize,
 }
 
+fn create_output_engine(path: &Path) -> Result<Engine> {
+    if path.exists() {
+        return Err(Error::OutputExists(path.display().to_string()));
+    }
+
+    let root = path.parent().ok_or(Error::InvalidOutputPath)?;
+
+    let name = path
+        .file_stem()
+        .and_then(|value| value.to_str())
+        .ok_or(Error::InvalidOutputPath)?;
+
+    let parent = root.parent().ok_or(Error::InvalidOutputPath)?;
+
+    Engine::create(parent, name).map_err(Into::into)
+}
+
+pub fn merge(
+    left: impl AsRef<Path>,
+    right: impl AsRef<Path>,
+    output: impl AsRef<Path>,
+) -> Result<MergeReport> {
+    let left = left.as_ref();
+    let right = right.as_ref();
+    let output = output.as_ref();
+
+    validate_merge_paths(left, right, output)?;
+
+    let left_engine = Engine::open(left)?;
+    let right_engine = Engine::open(right)?;
+
+    let mut output_engine = create_output_engine(output)?;
+
+    merge_databases(&left_engine, &right_engine, &mut output_engine)
+}
+
 #[cfg(test)]
-mod tests {
+mod test {
     use super::*;
 
+    use tempfile::tempdir;
+
+    use eir_core::entity::{input::EntityInput, prelude::types::EntityID};
+
     #[test]
-    fn merge_does_not_modify_inputs() {
-        // Create A.eir and B.eir.
-        // Record their sizes/contents.
-        // Merge into C.eir.
-        // Verify A and B are unchanged.
+    fn merge_combines_two_databases() -> Result<()> {
+        let temp = tempdir()?;
+
+        let left = create_database(temp.path(), "left", 1000, "Left Entity")?;
+        let right = create_database(temp.path(), "right", 2000, "Right Entity")?;
+        let output = temp.path().join("merged").join("merged.eir");
+
+        let report = merge(&left, &right, &output)?;
+
+        assert_eq!(report.entities_added, 2);
+        assert_eq!(report.entities_skipped, 0);
+
+        let merged = Engine::open(&output)?;
+
+        assert!(merged.entity(EntityID::new(1000)).is_some());
+        assert!(merged.entity(EntityID::new(2000)).is_some());
+
+        Ok(())
     }
 
     #[test]
-    fn merge_creates_new_database() {
-        // A + B -> C
-        // Verify C exists and can be opened by eir-core.
+    fn merge_skips_duplicate_entity_ids() -> Result<()> {
+        let temp = tempdir()?;
+
+        let left = create_database(temp.path(), "left", 1000, "Left Entity")?;
+        let right = create_database(temp.path(), "right", 1000, "Right Entity")?;
+        let output = temp.path().join("merged").join("merged.eir");
+
+        let report = merge(&left, &right, &output)?;
+
+        assert_eq!(report.entities_added, 1);
+        assert_eq!(report.entities_skipped, 1);
+
+        let merged = Engine::open(&output)?;
+
+        assert_eq!(
+            merged.entity(EntityID::new(1000)).unwrap().aliases,
+            vec!["Left Entity".into()]
+        );
+
+        Ok(())
     }
 
-    #[test]
-    fn merge_rejects_same_output_as_input() {
-        // A + B -> A must fail.
-    }
+    fn create_database(
+        parent: &Path,
+        name: &str,
+        id: usize,
+        alias: &str,
+    ) -> Result<std::path::PathBuf> {
+        let mut engine = Engine::create(parent, name)?;
 
-    #[test]
-    fn merge_is_atomic_on_failure() {
-        // Failed merge must not leave a partially-written C.eir.
+        engine.insert(EntityInput {
+            id: EntityID::new(id),
+            aliases: vec![alias.into()],
+            tags: vec![],
+            sources: vec![],
+            attributes: vec![],
+            relationships: vec![],
+        })?;
+
+        assert_eq!(engine.database().entities.len(), 1);
+
+        engine.flush()?;
+
+        let path = parent.join(name).join(format!("{name}.eir"));
+
+        drop(engine);
+
+        let reopened = Engine::open(&path)?;
+
+        assert_eq!(reopened.database().entities.len(), 1);
+        assert!(reopened.entity(EntityID::new(id)).is_some());
+
+        Ok(path)
     }
 }

@@ -25,7 +25,7 @@ pub struct AttributesInput {
 
 #[derive(Debug, Clone, Deserialize, rkyv::Archive, rkyv::Serialize, rkyv::Deserialize)]
 pub struct RelationshipInput {
-    pub target: usize,
+    pub target: EntityID,
     pub kind: Alias,
 }
 

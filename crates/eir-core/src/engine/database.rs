@@ -89,7 +89,7 @@ impl Database {
                 .relationships
                 .into_iter()
                 .map(|relationship| Relationship {
-                    target: EntityID::new(relationship.target),
+                    target: relationship.target,
                     kind: RelationshipType::Custom(
                         self.relationship_types.intern(&relationship.kind),
                     ),

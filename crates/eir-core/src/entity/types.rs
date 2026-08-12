@@ -147,12 +147,12 @@ impl std::fmt::Display for Value {
 }
 
 impl ArchivedValue {
-    pub fn display_value(&self) -> String {
+    pub fn display_value(&self) -> Box<str> {
         match self {
-            Self::String(value) => value.to_string(),
-            Self::Integer(value) => value.to_string(),
-            Self::Float(value) => value.to_string(),
-            Self::Boolean(value) => value.to_string(),
+            Self::String(value) => value.to_string().into_boxed_str(),
+            Self::Integer(value) => value.to_string().into_boxed_str(),
+            Self::Float(value) => value.to_string().into_boxed_str(),
+            Self::Boolean(value) => value.to_string().into_boxed_str(),
         }
     }
 }
