@@ -1,4 +1,4 @@
-use crate::query::{Query, QueryIntent};
+use crate::query::{Filter, Query, QueryIntent};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum SearchStage {
@@ -28,7 +28,35 @@ impl SearchPlan {
 
             QueryIntent::Browse => vec![SearchStage::Tag, SearchStage::Token],
 
-            QueryIntent::Filter => vec![SearchStage::Attribute, SearchStage::Tag],
+            QueryIntent::Filter => {
+                let mut stages = Vec::new();
+
+                for filter in &query.filters {
+                    match filter {
+                        Filter::Attribute { .. } => {
+                            if !stages.contains(&SearchStage::Attribute) {
+                                stages.push(SearchStage::Attribute);
+                            }
+                        }
+
+                        Filter::Tag { .. } => {
+                            if !stages.contains(&SearchStage::Tag) {
+                                stages.push(SearchStage::Tag);
+                            }
+                        }
+
+                        Filter::Relationship { .. } => {
+                            if !stages.contains(&SearchStage::Relationship) {
+                                stages.push(SearchStage::Relationship);
+                            }
+                        }
+
+                        _ => {}
+                    }
+                }
+
+                stages
+            }
 
             QueryIntent::Relationship => vec![SearchStage::Relationship, SearchStage::Token],
 
@@ -77,5 +105,23 @@ mod tests {
         let plan = SearchPlan::from_query(&query);
 
         assert_eq!(plan.stages, vec![SearchStage::Tag]);
+    }
+
+    #[test]
+    fn attribute_filter_creates_property_plan() {
+        let query = Query::parse("price>=10");
+
+        let plan = SearchPlan::from_query(&query);
+
+        assert!(plan.stages.contains(&SearchStage::Attribute));
+    }
+
+    #[test]
+    fn lookup_does_not_create_property_plan() {
+        let query = Query::parse("FizzBerry");
+
+        let plan = SearchPlan::from_query(&query);
+
+        assert!(!plan.stages.contains(&SearchStage::Attribute));
     }
 }
