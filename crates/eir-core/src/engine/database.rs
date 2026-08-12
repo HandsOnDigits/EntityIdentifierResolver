@@ -59,16 +59,12 @@ impl Database {
     }
 
     pub fn insert(&mut self, input: EntityInput) -> Result<()> {
-        if self
-            .entities
-            .iter()
-            .any(|e| e.id == EntityID::new(input.id))
-        {
+        if self.entities.iter().any(|e| e.id == input.id) {
             return Err(Error::EntityAlreadyExists(input.id.to_string()));
         }
 
         let entity = EntityDocument {
-            id: EntityID::new(input.id),
+            id: input.id,
 
             aliases: input.aliases.into_iter().collect(),
 
