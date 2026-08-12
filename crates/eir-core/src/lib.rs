@@ -8,7 +8,6 @@ pub mod search;
 pub mod storage;
 pub mod utils;
 
-#[cfg(test)]
 pub mod test_utils;
 
 pub use engine::{Database, DatabaseRecord};
