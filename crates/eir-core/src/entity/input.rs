@@ -1,10 +1,10 @@
 use serde::Deserialize;
 
-use super::types::Alias;
+use super::types::{Alias, EntityID};
 
 #[derive(Debug, Clone, Deserialize, rkyv::Archive, rkyv::Serialize, rkyv::Deserialize)]
 pub struct EntityInput {
-    pub id: usize,
+    pub id: EntityID,
 
     pub aliases: Vec<Alias>,
 
