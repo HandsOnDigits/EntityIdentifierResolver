@@ -32,6 +32,8 @@ fn entity_to_input(
                 database.sources.get(*id).map(|provider| SourceInput {
                     provider: provider.into(),
                     verified: false,
+                    created: None,
+                    updated: None,
                 })
             })
             .collect(),
