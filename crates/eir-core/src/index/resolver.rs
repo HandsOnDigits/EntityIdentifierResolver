@@ -585,3 +585,43 @@ impl Default for Resolver {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use crate::test_utils::test_entity_with_attribute;
+
+    #[test]
+    fn attribute_less_than_matches() {
+        let mut resolver = Resolver::default();
+
+        let key = AttributeKeyID::new(1);
+        resolver.register_attribute(key, "price".into());
+
+        resolver.add(test_entity_with_attribute(
+            EntityID::new(1),
+            "Cheap",
+            key,
+            Value::Integer(5),
+        ));
+
+        resolver.add(test_entity_with_attribute(
+            EntityID::new(2),
+            "Exact",
+            key,
+            Value::Integer(10),
+        ));
+
+        resolver.add(test_entity_with_attribute(
+            EntityID::new(3),
+            "Expensive",
+            key,
+            Value::Integer(20),
+        ));
+
+        let result = resolver.attribute_compare("price", ComparisonOp::Lt, &Value::Integer(10));
+
+        assert_eq!(result, vec![EntityID::new(1)]);
+    }
+}
