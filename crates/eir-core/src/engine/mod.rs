@@ -140,7 +140,7 @@ impl Engine {
     }
 
     pub fn insert(&mut self, input: EntityInput) -> Result<()> {
-        let id = EntityID::new(input.id);
+        let id = input.id;
 
         if self.database.entity(id).is_some() {
             return Err(Error::EntityAlreadyExists(input.id.to_string()));
@@ -200,7 +200,7 @@ mod tests {
         let mut engine = Engine::create(temp.path(), "nutrition")?;
 
         engine.insert(EntityInput {
-            id: 1000,
+            id: EntityID::new(1000),
             aliases: vec!["Test Food".into()],
             tags: vec![],
             attributes: vec![],
@@ -230,7 +230,7 @@ mod tests {
         let mut engine = Engine::create(temp.path(), "test")?;
 
         engine.insert(EntityInput {
-            id: 9200,
+            id: EntityID::new(9200),
             aliases: vec!["Roundtrip Berry".into()],
             tags: vec![],
             attributes: vec![],
@@ -265,7 +265,7 @@ mod tests {
             let mut engine = Engine::create(temp.path(), "test")?;
 
             engine.insert(EntityInput {
-                id: 9300,
+                id: EntityID::new(9300),
                 aliases: vec!["WAL Berry".into()],
                 tags: vec![],
                 attributes: vec![],
@@ -291,7 +291,7 @@ mod tests {
             let mut engine = Engine::create(temp.path(), "test")?;
 
             engine.insert(EntityInput {
-                id: 9400,
+                id: EntityID::new(9400),
                 aliases: vec!["Removed Berry".into()],
                 tags: vec![],
                 attributes: vec![],
@@ -325,7 +325,7 @@ mod tests {
         let mut engine = Engine::create(&root, &name)?;
 
         engine.insert(EntityInput {
-            id: 9300,
+            id: EntityID::new(9300),
             aliases: vec!["WAL Flush Berry".into()],
             tags: vec![],
             attributes: vec![],
@@ -356,7 +356,7 @@ mod tests {
         let mut engine = Engine::create(temp.path(), "test")?;
 
         engine.insert(EntityInput {
-            id: 9500,
+            id: EntityID::new(9500),
             aliases: vec!["Existing Berry".into()],
             tags: vec![],
             attributes: vec![],
@@ -367,7 +367,7 @@ mod tests {
         assert!(
             engine
                 .insert(EntityInput {
-                    id: 9500,
+                    id: EntityID::new(9500),
                     aliases: vec!["Duplicate Berry".into()],
                     tags: vec![],
                     attributes: vec![],
@@ -393,7 +393,7 @@ mod tests {
 
         for id in 0..100 {
             engine.insert(EntityInput {
-                id,
+                id: EntityID::new(id),
                 aliases: vec!["Entity {id}".into()],
                 tags: vec![],
                 attributes: vec![],
