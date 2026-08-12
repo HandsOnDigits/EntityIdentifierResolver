@@ -134,4 +134,106 @@ mod test {
 
         Ok(path)
     }
+
+    #[test]
+    fn merge_remaps_tags_and_sources() -> Result<()> {
+        let temp = tempdir()?;
+
+        let left = create_database_with_metadata(
+            temp.path(),
+            "left",
+            1000,
+            "Left Entity",
+            vec!["Food"],
+            vec!["Open Food Facts"],
+        )?;
+
+        let right = create_database_with_metadata(
+            temp.path(),
+            "right",
+            2000,
+            "Right Entity",
+            vec!["Food", "Manufacturer"],
+            vec!["Manufacturer Registry"],
+        )?;
+
+        let output = temp.path().join("merged").join("merged.eir");
+
+        let report = merge(&left, &right, &output)?;
+
+        assert_eq!(report.entities_added, 2);
+        assert_eq!(report.entities_skipped, 0);
+
+        let merged = Engine::open(&output)?;
+
+        let left_entity = merged.entity(EntityID::new(1000)).unwrap();
+        let right_entity = merged.entity(EntityID::new(2000)).unwrap();
+
+        let left_tags: Vec<_> = left_entity
+            .tags
+            .iter()
+            .filter_map(|id| merged.database().tags.get(*id))
+            .collect();
+
+        let right_tags: Vec<_> = right_entity
+            .tags
+            .iter()
+            .filter_map(|id| merged.database().tags.get(*id))
+            .collect();
+
+        assert_eq!(left_tags, vec!["food"]);
+        assert_eq!(right_tags, vec!["food", "manufacturer"]);
+
+        let left_sources: Vec<_> = left_entity
+            .sources
+            .iter()
+            .filter_map(|id| merged.database().sources.get(*id))
+            .collect();
+
+        let right_sources: Vec<_> = right_entity
+            .sources
+            .iter()
+            .filter_map(|id| merged.database().sources.get(*id))
+            .collect();
+
+        assert_eq!(left_sources, vec!["open food facts"]);
+        assert_eq!(right_sources, vec!["manufacturer registry"]);
+
+        assert_eq!(merged.database().tags.len(), 2);
+        assert_eq!(merged.database().sources.len(), 2);
+
+        Ok(())
+    }
+
+    fn create_database_with_metadata(
+        parent: &Path,
+        name: &str,
+        id: usize,
+        alias: &str,
+        tags: Vec<&str>,
+        sources: Vec<&str>,
+    ) -> Result<std::path::PathBuf> {
+        let mut engine = Engine::create(parent, name)?;
+
+        engine.insert(EntityInput {
+            id: EntityID::new(id),
+            aliases: vec![alias.into()],
+            tags: tags.into_iter().map(Into::into).collect(),
+            sources: sources
+                .into_iter()
+                .map(|provider| eir_core::entity::input::SourceInput {
+                    provider: provider.into(),
+                    verified: false,
+                    created: None,
+                    updated: None,
+                })
+                .collect(),
+            attributes: vec![],
+            relationships: vec![],
+        })?;
+
+        engine.flush()?;
+
+        Ok(parent.join(name).join(format!("{name}.eir")))
+    }
 }
