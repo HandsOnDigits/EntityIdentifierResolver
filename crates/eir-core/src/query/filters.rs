@@ -182,4 +182,39 @@ mod tests {
         // Once the operator executor is wired into a SearchContext:
         // assert!(results.is_empty());
     }
+
+    #[test]
+    fn comparison_operators_match_values() {
+        let ten = Value::Integer(10);
+        let twenty = Value::Integer(20);
+
+        assert!(ComparisonOp::Eq.matches(&ten, &ten));
+        assert!(!ComparisonOp::Eq.matches(&ten, &twenty));
+
+        assert!(!ComparisonOp::NotEq.matches(&ten, &ten));
+        assert!(ComparisonOp::NotEq.matches(&ten, &twenty));
+
+        assert!(ComparisonOp::Lt.matches(&ten, &twenty));
+        assert!(!ComparisonOp::Lt.matches(&twenty, &ten));
+
+        assert!(ComparisonOp::LtEq.matches(&ten, &ten));
+        assert!(ComparisonOp::LtEq.matches(&ten, &twenty));
+
+        assert!(ComparisonOp::Gt.matches(&twenty, &ten));
+        assert!(!ComparisonOp::Gt.matches(&ten, &twenty));
+
+        assert!(ComparisonOp::GtEq.matches(&twenty, &ten));
+        assert!(ComparisonOp::GtEq.matches(&ten, &ten));
+    }
+
+    #[test]
+    fn comparison_operators_do_not_match_incompatible_values() {
+        let string = Value::String("10".into());
+        let integer = Value::Integer(10);
+
+        assert!(!ComparisonOp::Lt.matches(&string, &integer));
+        assert!(!ComparisonOp::Gt.matches(&string, &integer));
+        assert!(!ComparisonOp::LtEq.matches(&string, &integer));
+        assert!(!ComparisonOp::GtEq.matches(&string, &integer));
+    }
 }
