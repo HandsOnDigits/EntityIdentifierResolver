@@ -6,6 +6,7 @@ mod planner;
 mod ranker;
 pub mod result;
 mod signal;
+mod tests;
 
 pub use candidate::CandidateSet;
 pub use executor::SearchExecutor;

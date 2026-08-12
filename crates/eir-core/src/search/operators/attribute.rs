@@ -1,17 +1,14 @@
 use crate::{
-    query::Filter,
-    search::{context::SearchContext, signal::Signal},
+    index::Resolver, query::Filter, search::candidate::CandidateSet, search::signal::Signal,
 };
 
-pub fn execute(ctx: &mut SearchContext) {
-    for filter in &ctx.query.filters {
-        let Filter::Attribute { key, op, value } = filter else {
-            continue;
-        };
+pub fn execute(resolver: &Resolver, candidates: &mut CandidateSet, filter: &Filter) {
+    let Filter::Attribute { key, op, value } = filter else {
+        return;
+    };
 
-        for entity in ctx.resolver.attribute_compare(key, *op, value) {
-            ctx.candidates.add_signal(entity, Signal::Property);
-        }
+    for entity in resolver.attribute_compare(key.as_ref(), *op, value) {
+        candidates.add_signal(entity, Signal::Property);
     }
 }
 
@@ -22,41 +19,77 @@ mod tests {
     use crate::{
         entity::prelude::types::{AttributeKeyID, EntityID, Value},
         index::Resolver,
-        query::Query,
-        search::{CandidateSet, context::SearchContext},
-        test_utils::{test_entity, test_entity_with_attribute},
+        query::{Filter, FilterExpr, Query},
+        search::CandidateSet,
+        test_utils::test_entity_with_attribute,
     };
 
-    #[test]
-    fn attribute_equals_adds_candidate() {
+    fn resolver() -> Resolver {
         let mut resolver = Resolver::default();
 
-        let attribute_key = AttributeKeyID::new(1);
-        let entity_id = EntityID::new(1);
+        let brand = AttributeKeyID::new(1);
+        let price = AttributeKeyID::new(2);
 
-        resolver.register_attribute(attribute_key, "brand".into());
+        resolver.register_attribute(brand, "brand".into());
+        resolver.register_attribute(price, "price".into());
 
         resolver.add(test_entity_with_attribute(
-            entity_id,
-            "FizzBerry Spark",
-            attribute_key,
+            EntityID::new(1),
+            "Acme Product",
+            brand,
             Value::String("Acme".into()),
         ));
 
-        let query = Query::parse("brand=Acme");
+        resolver.add(test_entity_with_attribute(
+            EntityID::new(2),
+            "Other Product",
+            brand,
+            Value::String("Other".into()),
+        ));
 
-        let mut ctx = SearchContext {
-            database: None,
-            resolver,
-            query: &query,
-            candidates: CandidateSet::default(),
-        };
+        resolver.add(test_entity_with_attribute(
+            EntityID::new(3),
+            "Cheap Product",
+            price,
+            Value::Integer(5),
+        ));
 
-        execute(&mut ctx);
+        resolver.add(test_entity_with_attribute(
+            EntityID::new(4),
+            "Expensive Product",
+            price,
+            Value::Integer(20),
+        ));
+
+        resolver
+    }
+
+    fn filter(query: &str) -> Filter {
+        let query = Query::parse(query);
+
+        match query.filter.as_ref().unwrap() {
+            FilterExpr::Filter(filter) => filter.clone(),
+            _ => panic!("expected a single filter"),
+        }
+    }
+
+    #[test]
+    fn attribute_equals_adds_matching_candidate() {
+        let resolver = resolver();
+        let filter = filter("brand=Acme");
+
+        let mut candidates = CandidateSet::default();
+
+        execute(&resolver, &mut candidates, &filter);
+
+        assert!(candidates.get(EntityID::new(1)).is_some());
+        assert!(candidates.get(EntityID::new(2)).is_none());
+        assert!(candidates.get(EntityID::new(3)).is_none());
+        assert!(candidates.get(EntityID::new(4)).is_none());
 
         assert!(
-            ctx.candidates
-                .get(entity_id)
+            candidates
+                .get(EntityID::new(1))
                 .unwrap()
                 .signals
                 .contains(&Signal::Property)
@@ -65,78 +98,121 @@ mod tests {
 
     #[test]
     fn attribute_equals_does_not_match_different_value() {
-        let mut resolver = Resolver::default();
+        let resolver = resolver();
+        let filter = filter("brand=Missing");
 
-        let attribute_key = AttributeKeyID::new(1);
-        let entity_id = EntityID::new(1);
+        let mut candidates = CandidateSet::default();
 
-        resolver.register_attribute(attribute_key, "brand".into());
+        execute(&resolver, &mut candidates, &filter);
 
-        resolver.add(test_entity_with_attribute(
-            entity_id,
-            "FizzBerry Spark",
-            attribute_key,
-            Value::String("Acme".into()),
-        ));
-
-        let query = Query::parse("brand=Other");
-
-        let mut ctx = SearchContext {
-            database: None,
-            resolver,
-            query: &query,
-            candidates: CandidateSet::default(),
-        };
-
-        execute(&mut ctx);
-
-        assert!(ctx.candidates.get(entity_id).is_none());
+        assert!(candidates.get(EntityID::new(1)).is_none());
+        assert!(candidates.get(EntityID::new(2)).is_none());
     }
 
     #[test]
-    fn attribute_not_equals_matches_different_value() {
-        let mut resolver = Resolver::default();
+    fn attribute_not_equals_excludes_matching_value() {
+        let resolver = resolver();
+        let filter = filter("brand!=Acme");
 
-        let attribute_key = AttributeKeyID::new(1);
+        let mut candidates = CandidateSet::default();
 
-        resolver.register_attribute(attribute_key, "brand".into());
+        execute(&resolver, &mut candidates, &filter);
 
-        resolver.add(test_entity_with_attribute(
-            EntityID::new(1),
-            "Acme Product",
-            attribute_key,
-            Value::String("Acme".into()),
-        ));
+        assert!(candidates.get(EntityID::new(1)).is_none());
+        assert!(candidates.get(EntityID::new(2)).is_some());
+    }
 
-        resolver.add(test_entity_with_attribute(
-            EntityID::new(2),
-            "Other Product",
-            attribute_key,
-            Value::String("Other".into()),
-        ));
+    #[test]
+    fn attribute_greater_than_matches_numeric_values() {
+        let resolver = resolver();
+        let filter = filter("price>10");
 
-        resolver.add(test_entity(EntityID::new(3), "No Brand Product"));
+        let mut candidates = CandidateSet::default();
 
-        let query = Query::parse("brand!=Acme");
+        execute(&resolver, &mut candidates, &filter);
 
-        let mut ctx = SearchContext {
-            database: None,
-            resolver,
-            query: &query,
-            candidates: CandidateSet::default(),
-        };
+        assert!(candidates.get(EntityID::new(3)).is_none());
+        assert!(candidates.get(EntityID::new(4)).is_some());
+    }
 
-        execute(&mut ctx);
+    #[test]
+    fn attribute_less_than_or_equal_matches_numeric_values() {
+        let resolver = resolver();
+        let filter = filter("price<=5");
 
-        // brand = Acme → excluded
-        assert!(ctx.candidates.get(EntityID::new(1)).is_none());
+        let mut candidates = CandidateSet::default();
 
-        // brand = Other → included
-        let candidate = ctx.candidates.get(EntityID::new(2)).unwrap();
+        execute(&resolver, &mut candidates, &filter);
 
-        assert!(candidate.signals.contains(&Signal::Property));
+        assert!(candidates.get(EntityID::new(3)).is_some());
+        assert!(candidates.get(EntityID::new(4)).is_none());
+    }
 
-        // No brand → excluded
-        assert!(ctx.candidates.get(EntityID::new(3)).is_none());
+    #[test]
+    fn attribute_filter_does_not_match_entity_without_attribute() {
+        let resolver = resolver();
+        let filter = filter("brand=Acme");
+
+        let mut candidates = CandidateSet::default();
+
+        execute(&resolver, &mut candidates, &filter);
+
+        // Entity 3 has only price.
+        assert!(candidates.get(EntityID::new(3)).is_none());
+    }
+
+    #[test]
+    fn non_attribute_filter_is_ignored() {
+        let resolver = resolver();
+
+        let filter = Filter::Tag { tag: "food".into() };
+
+        let mut candidates = CandidateSet::default();
+
+        execute(&resolver, &mut candidates, &filter);
+
+        assert!(candidates.get(EntityID::new(1)).is_none());
+        assert!(candidates.get(EntityID::new(2)).is_none());
+        assert!(candidates.get(EntityID::new(3)).is_none());
+        assert!(candidates.get(EntityID::new(4)).is_none());
+    }
+
+    #[test]
+    fn attribute_less_than_matches_numeric_values() {
+        let resolver = resolver();
+        let filter = filter("price<10");
+
+        let mut candidates = CandidateSet::default();
+
+        execute(&resolver, &mut candidates, &filter);
+
+        assert!(candidates.get(EntityID::new(3)).is_some());
+        assert!(candidates.get(EntityID::new(4)).is_none());
+    }
+
+    #[test]
+    fn attribute_greater_than_or_equal_matches_numeric_values() {
+        let resolver = resolver();
+        let filter = filter("price>=20");
+
+        let mut candidates = CandidateSet::default();
+
+        execute(&resolver, &mut candidates, &filter);
+
+        assert!(candidates.get(EntityID::new(3)).is_none());
+        assert!(candidates.get(EntityID::new(4)).is_some());
+    }
+
+    #[test]
+    fn attribute_comparison_does_not_match_incompatible_value_types() {
+        let resolver = resolver();
+        let filter = filter("price>abc");
+
+        let mut candidates = CandidateSet::default();
+
+        execute(&resolver, &mut candidates, &filter);
+
+        assert!(candidates.get(EntityID::new(3)).is_none());
+        assert!(candidates.get(EntityID::new(4)).is_none());
     }
 }

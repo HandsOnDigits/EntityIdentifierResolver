@@ -1,4 +1,4 @@
-use crate::query::{Filter, Query, QueryIntent};
+use crate::query::{Filter, FilterExpr, Query, QueryIntent};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum SearchStage {
@@ -31,36 +31,20 @@ impl SearchPlan {
             QueryIntent::Filter => {
                 let mut stages = Vec::new();
 
-                for filter in &query.filters {
-                    match filter {
-                        Filter::Attribute { .. } => {
-                            if !stages.contains(&SearchStage::Attribute) {
-                                stages.push(SearchStage::Attribute);
-                            }
-                        }
-
-                        Filter::Tag { .. } => {
-                            if !stages.contains(&SearchStage::Tag) {
-                                stages.push(SearchStage::Tag);
-                            }
-                        }
-
-                        Filter::Relationship { .. } => {
-                            if !stages.contains(&SearchStage::Relationship) {
-                                stages.push(SearchStage::Relationship);
-                            }
-                        }
-
-                        _ => {}
-                    }
+                if let Some(filter) = &query.filter {
+                    Self::collect_stages(filter, &mut stages);
                 }
 
                 stages
             }
 
-            QueryIntent::Relationship => vec![SearchStage::Relationship, SearchStage::Token],
+            QueryIntent::Relationship => {
+                vec![SearchStage::Relationship, SearchStage::Token]
+            }
 
-            QueryIntent::Similar => vec![SearchStage::Tag, SearchStage::Attribute],
+            QueryIntent::Similar => {
+                vec![SearchStage::Tag, SearchStage::Attribute]
+            }
 
             QueryIntent::Tag => vec![SearchStage::Tag],
 
@@ -68,6 +52,47 @@ impl SearchPlan {
         };
 
         Self { stages }
+    }
+
+    fn collect_stages(expr: &FilterExpr, stages: &mut Vec<SearchStage>) {
+        match expr {
+            FilterExpr::Filter(filter) => match filter {
+                Filter::Attribute { .. } => {
+                    if !stages.contains(&SearchStage::Attribute) {
+                        stages.push(SearchStage::Attribute);
+                    }
+                }
+
+                Filter::Tag { .. } => {
+                    if !stages.contains(&SearchStage::Tag) {
+                        stages.push(SearchStage::Tag);
+                    }
+                }
+
+                Filter::Relationship { .. } => {
+                    if !stages.contains(&SearchStage::Relationship) {
+                        stages.push(SearchStage::Relationship);
+                    }
+                }
+
+                Filter::Source { .. } => {
+                    // Add SearchStage::Source once you introduce it.
+                }
+
+                Filter::EntityType { .. } => {
+                    // Add an entity-type stage once supported.
+                }
+            },
+
+            FilterExpr::And(left, right) | FilterExpr::Or(left, right) => {
+                Self::collect_stages(left, stages);
+                Self::collect_stages(right, stages);
+            }
+
+            FilterExpr::Not(expr) => {
+                Self::collect_stages(expr, stages);
+            }
+        }
     }
 }
 
@@ -83,28 +108,13 @@ mod tests {
             normalized: "fizzberry".into(),
             tokens: vec!["fizzberry".into()],
             intent: QueryIntent::Lookup,
-            filters: Vec::new(),
+            filter: None,
         };
 
         let plan = SearchPlan::from_query(&query);
 
         assert!(plan.stages.contains(&SearchStage::Token));
         assert!(plan.stages.contains(&SearchStage::ExactAlias));
-    }
-
-    #[test]
-    fn tag_creates_tag_plan() {
-        let query = Query {
-            original: "tag:drink".into(),
-            normalized: "tag:drink".into(),
-            tokens: vec!["drink".into()],
-            intent: QueryIntent::Tag,
-            filters: Vec::new(),
-        };
-
-        let plan = SearchPlan::from_query(&query);
-
-        assert_eq!(plan.stages, vec![SearchStage::Tag]);
     }
 
     #[test]

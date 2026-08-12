@@ -1,4 +1,4 @@
-use super::{Filter, QueryIntent};
+use super::{FilterExpr, QueryIntent};
 
 pub type Token = Box<str>;
 pub type Message = Box<str>;
@@ -8,5 +8,5 @@ pub struct Query {
     pub normalized: Message,
     pub tokens: Vec<Token>,
     pub intent: QueryIntent,
-    pub filters: Vec<Filter>,
+    pub filter: Option<FilterExpr>,
 }

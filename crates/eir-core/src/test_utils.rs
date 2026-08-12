@@ -56,3 +56,21 @@ pub fn fixture_database() -> Database {
 
     database
 }
+
+pub fn test_entity_with_attributes(
+    id: EntityID,
+    alias: &str,
+    attributes: Vec<(AttributeKeyID, Value)>,
+) -> EntityDocument {
+    EntityDocument {
+        id,
+        aliases: vec![alias.into()],
+        tags: vec![],
+        attributes: attributes
+            .into_iter()
+            .map(|(key, value)| Attribute { key, value })
+            .collect(),
+        relationships: vec![],
+        sources: vec![],
+    }
+}

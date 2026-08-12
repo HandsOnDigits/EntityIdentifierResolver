@@ -1,25 +1,24 @@
 use crate::{
+    index::Resolver,
     query::Filter,
-    search::{context::SearchContext, signal::Signal},
+    search::{candidate::CandidateSet, signal::Signal},
 };
 
-pub fn execute(ctx: &mut SearchContext) {
-    for filter in &ctx.query.filters {
-        let Filter::Relationship { kind, target } = filter else {
-            continue;
-        };
+pub fn execute(resolver: &Resolver, candidates: &mut CandidateSet, filter: &Filter) {
+    let Filter::Relationship { kind, target } = filter else {
+        return;
+    };
 
-        let Some(kind_id) = ctx.resolver.relationship_type_id(kind) else {
-            continue;
-        };
+    let Some(kind_id) = resolver.relationship_type_id(kind) else {
+        return;
+    };
 
-        let Some(target_id) = ctx.resolver.resolve(target).first() else {
-            continue;
-        };
+    let Some(target_id) = resolver.resolve(target).first() else {
+        return;
+    };
 
-        for entity_id in ctx.resolver.relationship_lookup(kind_id, *target_id) {
-            ctx.candidates.add_signal(entity_id, Signal::Relationship);
-        }
+    for entity_id in resolver.relationship_lookup(kind_id, *target_id) {
+        candidates.add_signal(entity_id, Signal::Relationship);
     }
 }
 
@@ -28,14 +27,13 @@ mod tests {
     use super::*;
 
     use crate::{
-        entity::prelude::types::RelationshipType,
         entity::prelude::{
             EntityDocument,
-            types::{EntityID, Relationship},
+            types::{EntityID, Relationship, RelationshipType},
         },
         index::Resolver,
-        query::{Query, QueryIntent},
-        search::{SearchPlan, SearchStage, candidate::CandidateSet},
+        query::Filter,
+        search::{CandidateSet, signal::Signal},
         test_utils::test_entity,
     };
 
@@ -48,7 +46,7 @@ mod tests {
 
         let manufacturer_type = resolver.register_relationship_type("manufacturer");
 
-        let manufacturer = test_entity(entity_id_2, "Nestle");
+        resolver.add(test_entity(entity_id_2, "Nestle"));
 
         let product = EntityDocument {
             id: entity_id_1,
@@ -62,67 +60,91 @@ mod tests {
             tags: Vec::new(),
         };
 
-        resolver.add(manufacturer);
         resolver.add(product);
 
-        let query = Query::parse("relation:manufacturer:nestle");
-
-        let mut ctx = SearchContext {
-            database: None,
-            resolver,
-            query: &query,
-            candidates: CandidateSet::default(),
+        let filter = Filter::Relationship {
+            kind: "manufacturer".into(),
+            target: "nestle".into(),
         };
 
-        execute(&mut ctx);
+        let mut candidates = CandidateSet::default();
 
-        let candidate = ctx.candidates.get(entity_id_1).unwrap();
+        execute(&resolver, &mut candidates, &filter);
+
+        let candidate = candidates.get(entity_id_1).unwrap();
+
         assert!(candidate.signals.contains(&Signal::Relationship));
     }
 
     #[test]
-    fn relationship_lookup_finds_target() {
+    fn relationship_does_not_match_unknown_target() {
         let mut resolver = Resolver::default();
 
-        let entity_id_1 = EntityID::new(1);
-        let entity_id_2 = EntityID::new(10);
+        let entity_id = EntityID::new(1);
+        let target_id = EntityID::new(10);
 
-        let manufacturer_type = resolver.register_relationship_type("manufacturer");
+        let kind = resolver.register_relationship_type("manufacturer");
 
-        let nestle = test_entity(entity_id_2, "Nestle");
+        resolver.add(test_entity(target_id, "Nestle"));
 
-        let chocolate = EntityDocument {
-            id: entity_id_1,
+        resolver.add(EntityDocument {
+            id: entity_id,
             aliases: vec!["Chocolate Bar".into()],
             relationships: vec![Relationship {
-                kind: RelationshipType::Custom(manufacturer_type),
-                target: entity_id_2,
+                kind: RelationshipType::Custom(kind),
+                target: target_id,
             }],
             attributes: Vec::new(),
             sources: Vec::new(),
             tags: Vec::new(),
+        });
+
+        let filter = Filter::Relationship {
+            kind: "manufacturer".into(),
+            target: "Unknown".into(),
         };
 
-        resolver.add(nestle);
-        resolver.add(chocolate);
+        let mut candidates = CandidateSet::default();
 
-        let results = resolver.relationship_lookup(manufacturer_type, entity_id_2);
+        execute(&resolver, &mut candidates, &filter);
 
-        assert!(results.contains(&entity_id_1));
+        assert!(candidates.get(entity_id).is_none());
     }
 
     #[test]
-    fn relationship_creates_relationship_plan() {
-        let query = Query {
-            original: "relation:manufacturer:nestle".into(),
-            normalized: "relation:manufacturer:nestle".into(),
-            tokens: vec!["nestle".into()],
-            intent: QueryIntent::Relationship,
-            filters: Vec::new(),
+    fn relationship_does_not_match_wrong_kind() {
+        let mut resolver = Resolver::default();
+
+        let entity_id = EntityID::new(1);
+        let target_id = EntityID::new(10);
+
+        let manufacturer = resolver.register_relationship_type("manufacturer");
+
+        resolver.register_relationship_type("owner");
+
+        resolver.add(test_entity(target_id, "Nestle"));
+
+        resolver.add(EntityDocument {
+            id: entity_id,
+            aliases: vec!["Chocolate Bar".into()],
+            relationships: vec![Relationship {
+                kind: RelationshipType::Custom(manufacturer),
+                target: target_id,
+            }],
+            attributes: Vec::new(),
+            sources: Vec::new(),
+            tags: Vec::new(),
+        });
+
+        let filter = Filter::Relationship {
+            kind: "owner".into(),
+            target: "nestle".into(),
         };
 
-        let plan = SearchPlan::from_query(&query);
+        let mut candidates = CandidateSet::default();
 
-        assert!(plan.stages.contains(&SearchStage::Relationship));
+        execute(&resolver, &mut candidates, &filter);
+
+        assert!(candidates.get(entity_id).is_none());
     }
 }
