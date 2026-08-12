@@ -1,6 +1,6 @@
 use serde::Deserialize;
 
-use super::types::{Alias, EntityID};
+use super::types::{Alias, Date, EntityID};
 
 #[derive(Debug, Clone, Deserialize, rkyv::Archive, rkyv::Serialize, rkyv::Deserialize)]
 pub struct EntityInput {
@@ -33,4 +33,6 @@ pub struct RelationshipInput {
 pub struct SourceInput {
     pub provider: Alias,
     pub verified: bool,
+    pub created: Option<Date>,
+    pub updated: Option<Date>,
 }
