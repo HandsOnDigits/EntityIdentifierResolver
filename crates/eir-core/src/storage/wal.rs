@@ -140,7 +140,7 @@ mod tests {
         let mut wal = Wal::create(&path)?;
 
         wal.append(&WalOperation::Insert(EntityInput {
-            id: 9300,
+            id: EntityID::new(9300),
             aliases: vec!["WAL Berry".into()],
             tags: vec![],
             attributes: vec![],
@@ -154,7 +154,7 @@ mod tests {
 
         match &operations[0] {
             WalOperation::Insert(input) => {
-                assert_eq!(input.id, 9300);
+                assert_eq!(input.id, EntityID::new(9300));
                 assert_eq!(input.aliases, vec!["WAL Berry".into()]);
             }
             _ => panic!("expected insert operation"),
@@ -172,7 +172,7 @@ mod tests {
             let mut wal = Wal::create(&path)?;
 
             wal.append(&WalOperation::Insert(EntityInput {
-                id: 9300,
+                id: EntityID::new(9300),
                 aliases: vec!["WAL Berry".into()],
                 tags: vec![],
                 attributes: vec![],
@@ -191,7 +191,7 @@ mod tests {
 
             match &operations[0] {
                 WalOperation::Insert(input) => {
-                    assert_eq!(input.id, 9300);
+                    assert_eq!(input.id, EntityID::new(9300));
                     assert_eq!(input.aliases, vec!["WAL Berry".into()]);
                 }
                 _ => panic!("expected insert operation"),
