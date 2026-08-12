@@ -186,10 +186,11 @@ impl Resolver {
             (">", ComparisonOp::Gt),
             ("<", ComparisonOp::Lt),
         ] {
-            if let Some((key, value)) = query.split_once(operator) {
-                if !key.is_empty() && !value.is_empty() {
-                    return Some(AttributeQuery { key, op, value });
-                }
+            if let Some((key, value)) = query.split_once(operator)
+                && !key.is_empty()
+                && !value.is_empty()
+            {
+                return Some(AttributeQuery { key, op, value });
             }
         }
 
