@@ -1,7 +1,7 @@
 use crate::{
     Database,
     entity::EntityDocument,
-    entity::prelude::types::{EntityID, SourceID, TagID},
+    entity::prelude::types::{Attribute, AttributeKeyID, EntityID, SourceID, TagID, Value},
 };
 
 pub fn test_entity(id: EntityID, alias: &str) -> EntityDocument {
@@ -23,6 +23,22 @@ pub fn test_entity_with_tag(id: EntityID, alias: &str, tag: TagID) -> EntityDocu
         relationships: Vec::new(),
         sources: Vec::new(),
         tags: vec![tag],
+    }
+}
+
+pub fn test_entity_with_attribute(
+    id: EntityID,
+    name: &str,
+    key: AttributeKeyID,
+    value: Value,
+) -> EntityDocument {
+    EntityDocument {
+        id,
+        aliases: vec![name.into()],
+        tags: vec![],
+        attributes: vec![Attribute { key, value }],
+        relationships: vec![],
+        sources: vec![],
     }
 }
 

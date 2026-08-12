@@ -1,6 +1,9 @@
-use crate::search::{
-    Ranker,
-    result::{SearchExplanation, SearchResult, SearchSource},
+use crate::{
+    query::filters::ComparisonOp,
+    search::{
+        Ranker,
+        result::{SearchExplanation, SearchResult, SearchSource},
+    },
 };
 
 use std::collections::HashMap;
@@ -9,7 +12,7 @@ use crate::{
     engine::Database,
     entity::EntityDocument,
     entity::prelude::types::{
-        AttributeKeyID, EntityID, Relationship, RelationshipTypeID, SourceID, TagID,
+        AttributeKeyID, EntityID, Relationship, RelationshipTypeID, SourceID, TagID, Value,
     },
     storage::{PostingList, Registry},
     utils::normalize,
@@ -19,6 +22,7 @@ use super::{alias::AliasIndex, bk_tree::BKTreeIndex, inverted::InvertedIndex, tr
 
 pub struct AttributeQuery<'a> {
     pub key: &'a str,
+    pub op: ComparisonOp,
     pub value: &'a str,
 }
 
@@ -147,7 +151,15 @@ impl Resolver {
     }
 
     pub fn register_attribute(&mut self, id: AttributeKeyID, name: Box<str>) {
-        self.attribute_lookup.insert(normalize(&name), id);
+        let name = normalize(&name);
+        let index = id.index();
+
+        if self.attribute_names.len() <= index {
+            self.attribute_names.resize(index + 1, "".into());
+        }
+
+        self.attribute_names[index] = name.clone();
+        self.attribute_lookup.insert(name, id);
     }
 
     fn index_attribute(&mut self, key: &str, value: &str, id: EntityID) {
@@ -166,9 +178,22 @@ impl Resolver {
     }
 
     pub fn parse_attribute_query(query: &str) -> Option<AttributeQuery<'_>> {
-        let (key, value) = query.split_once(':')?;
+        for (operator, op) in [
+            (">=", ComparisonOp::GtEq),
+            ("<=", ComparisonOp::LtEq),
+            ("!=", ComparisonOp::NotEq),
+            ("=", ComparisonOp::Eq),
+            (">", ComparisonOp::Gt),
+            ("<", ComparisonOp::Lt),
+        ] {
+            if let Some((key, value)) = query.split_once(operator) {
+                if !key.is_empty() && !value.is_empty() {
+                    return Some(AttributeQuery { key, op, value });
+                }
+            }
+        }
 
-        Some(AttributeQuery { key, value })
+        None
     }
 
     pub fn register_source(&mut self, id: SourceID, name: Box<str>) {
@@ -240,11 +265,62 @@ impl Resolver {
         self.tags.lookup(tag)
     }
 
-    pub fn attribute_lookup(&self, key: &str, value: &str) -> Vec<EntityID> {
+    pub fn attribute_lookup(&self, key: &str, value: &Value) -> Vec<EntityID> {
         let key = normalize(key);
-        let value = normalize(value);
+        let value = value.normalized();
 
         self.attribute_pairs.lookup(&format!("{key}:{value}"))
+    }
+
+    pub fn attribute_compare(&self, key: &str, op: ComparisonOp, value: &Value) -> Vec<EntityID> {
+        let key = normalize(key);
+
+        let Some(key_id) = self.attribute_lookup.get(key.as_ref()).copied() else {
+            return Vec::new();
+        };
+
+        self.documents
+            .values()
+            .filter_map(|document| {
+                let matches = document
+                    .attributes
+                    .iter()
+                    .filter(|attribute| attribute.key == key_id)
+                    .any(|attribute| op.matches(&attribute.value, value));
+
+                matches.then_some(document.id)
+            })
+            .collect()
+    }
+
+    pub fn attribute_not_equal(&self, key: &str, value: &Value) -> Vec<EntityID> {
+        let key = normalize(key);
+
+        let Some(key_id) = self.attribute_lookup.get(key.as_ref()).copied() else {
+            return Vec::new();
+        };
+
+        self.documents
+            .values()
+            .filter_map(|document| {
+                let attributes = document
+                    .attributes
+                    .iter()
+                    .filter(|attribute| attribute.key == key_id);
+
+                let mut found = false;
+
+                for attribute in attributes {
+                    found = true;
+
+                    if attribute.value == *value {
+                        return None;
+                    }
+                }
+
+                found.then_some(document.id)
+            })
+            .collect()
     }
 
     pub fn relationship_lookup(&self, kind: RelationshipTypeID, target: EntityID) -> Vec<EntityID> {

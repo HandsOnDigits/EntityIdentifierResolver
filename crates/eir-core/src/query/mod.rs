@@ -1,4 +1,4 @@
-mod filters;
+pub mod filters;
 mod intent;
 mod parser;
 mod types;

@@ -95,6 +95,44 @@ impl Value {
             Self::Boolean(value) => value.to_string(),
         }
     }
+
+    pub fn compare(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        match (self, other) {
+            (Self::Integer(a), Self::Integer(b)) => Some(a.cmp(b)),
+
+            (Self::Float(a), Self::Float(b)) => a.partial_cmp(b),
+
+            (Self::Integer(a), Self::Float(b)) => (*a as f64).partial_cmp(b),
+
+            (Self::Float(a), Self::Integer(b)) => a.partial_cmp(&(*b as f64)),
+
+            (Self::String(a), Self::String(b)) => Some(a.cmp(b)),
+
+            _ => None,
+        }
+    }
+
+    pub fn parse_like(value: &str, kind: &Self) -> Option<Self> {
+        match kind {
+            Self::String(_) => Some(Self::String(value.into())),
+
+            Self::Integer(_) => value.parse().ok().map(Self::Integer),
+
+            Self::Float(_) => value.parse().ok().map(Self::Float),
+
+            Self::Boolean(_) => value.parse().ok().map(Self::Boolean),
+        }
+    }
+
+    pub fn matches(&self, expected: &Value) -> bool {
+        match (self, expected) {
+            (Self::String(actual), Self::String(expected)) => {
+                normalize(actual) == normalize(expected)
+            }
+
+            _ => self == expected,
+        }
+    }
 }
 
 impl std::fmt::Display for Value {

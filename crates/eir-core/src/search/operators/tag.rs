@@ -12,8 +12,10 @@ pub fn execute(ctx: &mut SearchContext) {
     }
 }
 
-#[test]
-fn tag_adds_candidate() {
+#[cfg(test)]
+mod tests {
+    use super::*;
+
     use crate::{
         entity::prelude::types::{EntityID, TagID},
         index::Resolver,
@@ -22,31 +24,34 @@ fn tag_adds_candidate() {
         test_utils::test_entity_with_tag,
     };
 
-    let mut resolver = Resolver::default();
+    #[test]
+    fn tag_adds_candidate() {
+        let mut resolver = Resolver::default();
 
-    let tag_id = TagID::new(1);
-    let entity_id = EntityID::new(1);
+        let tag_id = TagID::new(1);
+        let entity_id = EntityID::new(1);
 
-    resolver.register_tag(tag_id, "drink".into());
+        resolver.register_tag(tag_id, "drink".into());
 
-    resolver.add(test_entity_with_tag(entity_id, "FizzBerry Spark", tag_id));
+        resolver.add(test_entity_with_tag(entity_id, "FizzBerry Spark", tag_id));
 
-    let query = Query::parse("drink");
+        let query = Query::parse("drink");
 
-    let mut ctx = SearchContext {
-        database: None,
-        resolver,
-        query: &query,
-        candidates: CandidateSet::default(),
-    };
+        let mut ctx = SearchContext {
+            database: None,
+            resolver,
+            query: &query,
+            candidates: CandidateSet::default(),
+        };
 
-    execute(&mut ctx);
+        execute(&mut ctx);
 
-    assert!(
-        ctx.candidates
-            .get(entity_id)
-            .unwrap()
-            .signals
-            .contains(&Signal::Tag)
-    );
+        assert!(
+            ctx.candidates
+                .get(entity_id)
+                .unwrap()
+                .signals
+                .contains(&Signal::Tag)
+        );
+    }
 }

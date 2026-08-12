@@ -3,7 +3,8 @@ resolver = "2"
 
 members = [
     "crates/eir-core",
-    "crates/eir-cli"
+    "crates/eir-cli",
+    "crates/eir-version"
 ]
 
 [workspace.dependencies]
