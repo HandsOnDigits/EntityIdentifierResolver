@@ -8,25 +8,21 @@ impl Query {
     /// Parses a raw query string into a structured `Query` instance.
     pub fn parse(input: &str) -> Self {
         let original = input.into();
-        let normalized_str = normalize(input);
-        let normalized = normalized_str.clone().into();
+        let normalized = normalize(input);
         let filter = parse_filter_expr(input);
 
-        let tokens = normalized_str
-            .split_whitespace()
-            .map(|s| s.into())
-            .collect();
+        let tokens = normalized.split_whitespace().map(|s| s.into()).collect();
 
         let intent = if filter.is_some() {
             QueryIntent::Filter
-        } else if normalized_str.contains("similar")
-            || normalized_str.contains("like")
-            || normalized_str.contains("alternative")
+        } else if normalized.contains("similar")
+            || normalized.contains("like")
+            || normalized.contains("alternative")
         {
             QueryIntent::Similar
-        } else if normalized_str.contains("by")
-            || normalized_str.contains("from")
-            || normalized_str.contains("made")
+        } else if normalized.contains("by")
+            || normalized.contains("from")
+            || normalized.contains("made")
         {
             QueryIntent::Relationship
         } else {
