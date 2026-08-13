@@ -259,8 +259,8 @@ cargo fmt --all
 ## Documentation
 
 * **[CLI](docs/cli.md)** — command reference and database operations
+* **[Model](docs/the_eir_model.md)** - The overviwe of the EIR model.
 * **[Repository](https://github.com/HandsOnDigits/EntityIdentifierResolver)** — source code and development
-
 ---
 
 ## Design Goals
