@@ -620,6 +620,7 @@ EIR is designed around a few simple principles:
 - [ ] HTTP server
 - [ ] API
 - [ ] TypeScript client
+
 :::
 ## License
 
