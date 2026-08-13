@@ -1,17 +1,3 @@
-# Entity Identifier Resolver (EIR)
-
-**Entity Identifier Resolver** is a local entity database and search engine designed for fast, explainable entity resolution.
-
-EIR stores structured entities with aliases, tags, attributes, sources, and relationships, then builds specialized indexes that allow applications to resolve natural-language queries against those entities.
-
-It is written in Rust and is currently designed primarily as a local embedded database/search engine with a command-line interface.
-
-> **Status:** EIR is under active development. The core database, storage, indexing, and search systems are functional and tested. The server command is currently a placeholder.
-
-> ⚠️ **EIR is not encrypted. Do not use it to store sensitive data without appropriate external protection.**
-
----
-
 # Entity Identifier Resolver
 
 **Entity Identifier Resolver (EIR)** is a local entity database and search engine written in Rust.
@@ -23,6 +9,8 @@ EIR stores structured entities and resolves queries against them using aliases, 
 EIR is under active development.
 
 The core database, storage, indexing, and search systems are implemented and tested. The CLI provides tools for working with EIR databases.
+
+> ⚠️ **EIR is not encrypted. Do not use it to store sensitive data without appropriate external protection.**
 
 ---
 
