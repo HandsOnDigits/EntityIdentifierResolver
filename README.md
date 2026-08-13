@@ -1141,3 +1141,5 @@ EIR's core job is simple:
 > **Take structured entities, build efficient indexes, understand a query, find plausible candidates, and return explainable ranked matches.**
 
 Everything else—storage, WAL, compaction, the CLI, and future APIs—exists to make that core capability reliable and usable.
+
+Contains AI-Assisted Code
