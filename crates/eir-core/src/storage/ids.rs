@@ -6,7 +6,10 @@ pub trait RegistryID: Copy + Eq + Hash {
 }
 
 macro_rules! define_id {
-    ($name:ident) => {
+    (
+        $(#[$meta:meta])*
+        $name:ident
+    ) => {
         #[derive(
             Debug,
             Clone,
@@ -64,8 +67,30 @@ macro_rules! define_id {
     };
 }
 
-define_id!(EntityID);
-define_id!(TagID);
-define_id!(SourceID);
-define_id!(AttributeKeyID);
-define_id!(RelationshipTypeID);
+define_id! {
+    /// Identifies an entity within a database.
+    ///
+    /// Entity IDs must be unique within a database. Database insertion
+    /// rejects an entity when another entity already has the same ID.
+    EntityID
+}
+
+define_id! {
+    /// Identifies a tag in the database tag registry.
+    TagID
+}
+
+define_id! {
+    /// Identifies a source in the database source registry.
+    SourceID
+}
+
+define_id! {
+    /// Identifies an attribute key in the attribute-key registry.
+    AttributeKeyID
+}
+
+define_id! {
+    /// Identifies a relationship type in the relationship-type registry.
+    RelationshipTypeID
+}

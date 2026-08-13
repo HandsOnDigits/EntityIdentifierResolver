@@ -8,6 +8,11 @@ use crate::{
     utils::normalize,
 };
 
+/// Search indexes built from the entities currently stored in the database.
+///
+/// These indexes are derived data used to speed up searches. When the entity
+/// collection changes, the indexes must be rebuilt before searches can rely
+/// on the new entity state.
 #[derive(Debug, Default, Clone)]
 pub struct Indexes {
     pub alias: AliasIndex,
