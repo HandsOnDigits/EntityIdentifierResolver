@@ -993,7 +993,7 @@ Tags, attributes, sources, and relationships can all participate in resolution.
 
 ### Separate logical and physical storage
 
-The logical database model is separated from segments, WAL and other storage implementation details.
+The logical database model is separated from segments, WAL, and other storage implementation details.
 
 ### Library first
 
@@ -1129,10 +1129,10 @@ The complete runtime architecture is:
     Database    Resolver  │      WAL       Segments
        │           │      │
    Entities     Search    │
-   Registries     │       │
-   Indexes    Planner     │
-              Executor   │
-              Ranker     │
+   Registries      │      │
+   Indexes      Planner   │
+                Executor  │
+                Ranker    │
 ```
 
 EIR's core job is simple:
