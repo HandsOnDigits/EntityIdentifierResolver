@@ -1,20 +1,199 @@
 # Entity Identifier Resolver
 
-**Entity Identifier Resolver (EIR)** is a local entity database and search engine written in Rust.
+**Entity Identifier Resolver (EIR)** is a local, strongly typed entity database and search engine written in Rust.
 
-EIR stores structured entities and resolves queries against them using aliases, tokens, tags, attributes, sources, and relationships.
+It is designed for applications that need to find an entity from names, metadata, or relationships rather than from a single known identifier.
 
 ## Status
 
-EIR is under active development.
+EIR is under active development. The CLI, storage, and search systems are functional and tested. The server is currently a CLI placeholder.
 
-The core database, storage, indexing, and search systems are implemented and tested. The CLI provides tools for working with EIR databases.
+> ⚠️ **Warning:** EIR is not encrypted. Do not use it to store sensitive data.
 
-> ⚠️ **EIR is not encrypted. Do not use it to store sensitive data without appropriate external protection.**
+---
+
+## Entity Model
+
+An EIR database contains entities identified by an `EntityID`.
+
+An entity can have several aliases, tags, sources, attributes, and relationships:
+
+```json
+{
+  "id": 1001,
+  "aliases": [
+    "FizzBerry Spark",
+    "FizzBerry",
+    "Berry Spark"
+  ],
+  "tags": [
+    "drink",
+    "berry"
+  ],
+  "sources": [
+    {
+      "provider": "Open Food Facts",
+      "verified": true
+    }
+  ],
+  "attributes": [],
+  "relationships": []
+}
+```
+
+### Aliases
+
+Aliases are names that can be used to find an entity.
+
+For example, the same entity might be known as:
+
+```text
+FizzBerry Spark
+FizzBerry
+Berry Spark
+```
+
+EIR can search aliases using exact, prefix, and fuzzy matching.
+
+### Tags
+
+Tags provide categories or other labels associated with an entity.
+
+```text
+FizzBerry Spark
+├── drink
+└── berry
+```
+
+Tags can also participate in searches.
+
+### Sources
+
+Sources record where information about an entity came from.
+
+An entity can have information from several providers, and source information can be used during search and inspection.
+
+### Attributes
+
+Attributes describe properties of an entity.
+
+For example:
+
+```text
+brand    = FizzBerry
+category = Soft Drink
+country  = Denmark
+```
+
+Unlike an alias, an attribute describes the entity rather than providing another name for it.
+
+### Relationships
+
+Relationships connect one entity to another.
+
+For example:
+
+```text
+FizzBerry Spark
+      │
+      └── manufactured_by ──> FizzBerry Foods
+```
+
+This allows EIR to use information about related entities when resolving a query.
+
+---
+
+## Search
+
+EIR does not use one search algorithm for every query.
+
+A query can be handled by several search operations:
+
+```mermaid
+flowchart LR
+    QUERY["Query"] --> PLANNER["Planner"]
+
+    PLANNER --> EXACT["Exact Alias"]
+    PLANNER --> PREFIX["Prefix Alias"]
+    PLANNER --> FUZZY["Fuzzy Alias"]
+    PLANNER --> TOKEN["Token"]
+    PLANNER --> TAG["Tag"]
+    PLANNER --> PROPERTY["Property"]
+    PLANNER --> RELATIONSHIP["Relationship"]
+
+    EXACT --> CANDIDATES["Candidates"]
+    PREFIX --> CANDIDATES
+    FUZZY --> CANDIDATES
+    TOKEN --> CANDIDATES
+    TAG --> CANDIDATES
+    PROPERTY --> CANDIDATES
+    RELATIONSHIP --> CANDIDATES
+
+    CANDIDATES --> RANKER["Ranker"]
+    RANKER --> RESULTS["Results"]
+```
+
+The search system records which operations produced each candidate. This makes it possible to see why an entity matched a query.
+
+For example, a result might have matched through:
+
+```text
+ExactAlias
+Token
+Tag
+```
+
+rather than simply returning a score with no explanation.
+
+---
+
+## Database
+
+The database contains the entities and the structures needed to search them.
+
+```text
+Database
+├── Entities
+├── Tag Registry
+├── Source Registry
+├── Attribute-Key Registry
+├── Relationship-Type Registry
+└── Indexes
+```
+
+Registries assign internal identifiers to repeated values such as tags, source names, attribute keys, and relationship types.
+
+Indexes provide the structures used to find entities efficiently.
+
+The indexes are built from the current database contents and include structures for aliases, prefixes, fuzzy matching, tokens, tags, sources, attributes, and relationships.
+
+---
+
+## Storage
+
+The logical database is stored using persistent storage managed by the EIR engine.
+
+A database has a layout similar to:
+
+```text
+database/
+├── database.eir
+├── eir.toml
+├── segments/
+└── wal/
+```
+
+The storage backend uses DEIR segments and a write-ahead log.
+
+The WAL records database mutations so they can be recovered if necessary.
+
+Compaction can later rewrite the stored data to remove obsolete storage.
 
 ---
 
 ## Architecture
+
+The main runtime object is `Engine`.
 
 ```mermaid
 flowchart TB
@@ -22,46 +201,141 @@ flowchart TB
 
     ENGINE["Engine"]
 
-    DB["Database"]
+    DATABASE["Database"]
     RESOLVER["Resolver"]
-    STORAGE["Storage"]
+    BACKEND["Backend"]
 
     QUERY["Query"]
     SEARCH["Search"]
     INDEXES["Indexes"]
 
+    WAL["WAL"]
+    SEGMENTS["DEIR Segments"]
+
     CLI --> ENGINE
 
-    ENGINE --> DB
+    ENGINE --> DATABASE
     ENGINE --> RESOLVER
-    ENGINE --> STORAGE
+    ENGINE --> BACKEND
 
     RESOLVER --> QUERY
     QUERY --> SEARCH
     SEARCH --> INDEXES
 
-    DB --> INDEXES
+    BACKEND --> WAL
+    BACKEND --> SEGMENTS
+
+    DATABASE --> INDEXES
 ```
 
-At the center is `Engine`, which coordinates the database, resolver, and storage backend.
+`Engine` coordinates the database, resolver, and storage backend.
 
-The main flow is:
+The database contains the entity data and indexes, while the resolver uses those indexes to perform searches.
+
+---
+
+## Whole System
+
+```mermaid
+flowchart TB
+    USER["Application / CLI"]
+
+    ENGINE["Engine"]
+
+    DATABASE["Database"]
+    ENTITIES["Entity Documents"]
+    REGISTRIES["Registries"]
+    INDEXES["Search Indexes"]
+
+    QUERY["Query"]
+    PLANNER["Planner"]
+    EXECUTOR["Executor"]
+    RANKER["Ranker"]
+    RESULTS["Search Results"]
+
+    STORAGE["Storage Backend"]
+    WAL["Write-Ahead Log"]
+    SEGMENTS["DEIR Segments"]
+
+    USER --> ENGINE
+
+    ENGINE --> DATABASE
+    ENGINE --> STORAGE
+
+    DATABASE --> ENTITIES
+    DATABASE --> REGISTRIES
+    DATABASE --> INDEXES
+
+    ENGINE --> QUERY
+    QUERY --> PLANNER
+    PLANNER --> EXECUTOR
+    EXECUTOR --> INDEXES
+    EXECUTOR --> RANKER
+    RANKER --> RESULTS
+
+    STORAGE --> WAL
+    STORAGE --> SEGMENTS
+```
+
+This is the overall flow:
 
 ```text
-Entity Documents
-       │
-       ▼
-    Database
-       │
-       ├── Registries
-       └── Indexes
-              │
-              ▼
-           Resolver
-              │
-              ▼
-          Search Results
+Entity data
+    │
+    ▼
+Database
+    │
+    ├── Registries
+    └── Search indexes
+             │
+             ▼
+          Resolver
+             │
+             ▼
+           Query
+             │
+             ▼
+          Results
 ```
+
+---
+
+## CLI
+
+The `eir` CLI provides tools for working with databases.
+
+Current commands include:
+
+```text
+init
+build
+stats
+inspect
+search
+insert
+remove
+update
+compact
+merge
+server
+completions
+```
+
+For example:
+
+```bash
+cargo eir init data nutrition
+
+cargo eir build \
+  --input entities.json \
+  --database data/nutrition
+
+cargo eir search \
+  data/nutrition/nutrition.eir \
+  "FizzBerry"
+```
+
+See [`docs/cli.md`](docs/cli.md) for the complete command reference.
 
 ---
 
@@ -80,150 +354,17 @@ EntityIdentifierResolver/
 
 ### `eir-core`
 
-The core EIR library containing:
+The core database and search engine.
 
-* database and engine
-* entity model
-* storage
-* indexes
-* query parsing
-* search and ranking
+It contains the entity model, engine, storage, indexing, query, and search systems.
 
 ### `eir-cli`
 
-Command-line interface for creating, searching, inspecting, and maintaining databases.
+The command-line interface built on top of `eir-core`.
 
 ### `eir-version`
 
-Database/version-related functionality.
-
----
-
-## Entity Model
-
-An entity can contain aliases, tags, attributes, relationships, and sources.
-
-```json
-{
-  "id": 1001,
-  "aliases": [
-    "FizzBerry Spark",
-    "FizzBerry"
-  ],
-  "tags": [
-    "drink",
-    "berry"
-  ],
-  "attributes": [],
-  "relationships": [],
-  "sources": [
-    {
-      "provider": "Open Food Facts",
-      "verified": true
-    }
-  ]
-}
-```
-
----
-
-## Search
-
-EIR combines multiple search signals.
-
-```mermaid
-flowchart LR
-    Q["Query"] --> P["Parser"]
-    P --> PLAN["Planner"]
-
-    PLAN --> EXACT["Exact"]
-    PLAN --> PREFIX["Prefix"]
-    PLAN --> FUZZY["Fuzzy"]
-    PLAN --> TOKEN["Token"]
-    PLAN --> TAG["Tag"]
-    PLAN --> PROPERTY["Property"]
-    PLAN --> RELATIONSHIP["Relationship"]
-
-    EXACT --> C["Candidates"]
-    PREFIX --> C
-    FUZZY --> C
-    TOKEN --> C
-    TAG --> C
-    PROPERTY --> C
-    RELATIONSHIP --> C
-
-    C --> R["Ranker"]
-    R --> RESULTS["Results"]
-```
-
-Search results include the signals that contributed to a match, making results easier to understand and debug.
-
----
-
-## Storage
-
-An EIR database uses a logical `.eir` database identity together with its supporting storage:
-
-```text
-database/
-├── database.eir
-├── eir.toml
-├── segments/
-└── wal/
-```
-
-The storage layer uses persistent segments and a write-ahead log.
-
-```mermaid
-flowchart LR
-    MUTATION["Insert / Update / Remove"]
-    WAL["WAL"]
-    DB["Database"]
-    SEGMENTS["Segments"]
-
-    MUTATION --> WAL
-    MUTATION --> DB
-    DB --> SEGMENTS
-```
-
-Compaction rewrites persistent storage to remove obsolete data.
-
----
-
-## CLI
-
-The CLI provides the main database management interface:
-
-```text
-init
-build
-stats
-inspect
-search
-insert
-remove
-update
-compact
-merge
-server
-completions
-```
-
-Example:
-
-```bash
-cargo eir init data nutrition
-
-cargo eir build \
-  --input fixtures/entities.json \
-  --database data/nutrition
-
-cargo eir search \
-  data/nutrition/nutrition.eir \
-  "FizzBerry"
-```
-
-See **[CLI Documentation](docs/cli.md)** for the complete command reference.
+Version-related functionality used by the database and merge system.
 
 ---
 
@@ -255,6 +396,18 @@ cargo fmt --all
 ```
 
 ---
+
+## Documentation
+
+* [`docs/cli.md`](docs/cli.md) — CLI commands and database operations
+* [`docs/model.md`](docs/model.md) — entity model reference
+
+---
+
+## License
+
+See [`LICENSE`](LICENSE) for the license.
+
 
 ## Documentation
 
