@@ -99,7 +99,7 @@ The project is split into several layers.
 
 ```mermaid
 flowchart TB
-    CLI["eir-cli<br/>Command Line Interface"]
+    CLI["eir-cli Command Line Interface"]
 
     CORE["eir-core"]
 
