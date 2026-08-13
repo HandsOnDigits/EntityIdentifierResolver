@@ -621,7 +621,6 @@ EIR is designed around a few simple principles:
 - [ ] API
 - [ ] TypeScript client
 
-:::
 ## License
 
 See the repository for the current license.
