@@ -4,241 +4,366 @@
 
 `eir` is the command-line interface for the Entity Identifier Resolver (EIR).
 
-The CLI provides tools for building, inspecting, searching, modifying, and debugging local EIR databases.
+The CLI provides tools for creating, building, inspecting, searching, modifying, merging, and maintaining EIR databases.
 
-EIR is designed around local entity resolution: resolving names, aliases, tokens, tags, attributes, sources, and relationships into known entities.
+EIR is a local, strongly typed entity search and resolution engine. Entities can contain:
 
-The CLI is also the primary development and testing interface for EIR. It makes it possible to build a database, inspect its contents, test search behavior, insert and remove entities, and verify that changes persist correctly.
+* aliases
+* tags
+* attributes
+* sources
+* relationships
+
+The CLI is built on top of `eir-core`. The CLI does not implement the search engine itself; it exposes the database and search functionality provided by the core library.
+
+> **Warning:** EIR databases are not encrypted. Do not use EIR to store sensitive data unless the surrounding storage environment provides appropriate protection.
 
 ---
 
-# Installation
+# Workspace
 
-During development, the CLI can be run through Cargo:
+The current workspace is split into:
+
+```text
+EntityIdentifierResolver/
+├── crates/
+│   ├── eir-core/
+│   ├── eir-cli/
+│   └── eir-version/
+├── apps/
+├── docs/
+└── fixtures/
+```
+
+The main responsibilities are:
+
+| Component     | Responsibility                                                       |
+| ------------- | -------------------------------------------------------------------- |
+| `eir-core`    | Database, storage, indexing, query planning, search and entity types |
+| `eir-cli`     | Command-line interface                                               |
+| `eir-version` | Database/version/merge-related APIs                                  |
+| `fixtures`    | Test and example entity datasets                                     |
+
+The workspace is defined in the root `Cargo.toml`.
+
+---
+
+# Running the CLI
+
+During development, run the CLI through Cargo:
 
 ```powershell
 cargo run -p eir-cli -- <COMMAND>
 ```
 
-A shorter development command is also available:
+If the repository's Cargo alias is available:
 
 ```powershell
 cargo eir <COMMAND>
 ```
 
-After installation, the binary can be run directly:
+Once installed, the command is simply:
 
 ```powershell
 eir <COMMAND>
 ```
 
+Show general help:
+
+```powershell
+cargo eir --help
+```
+
+Show command-specific help:
+
+```powershell
+cargo eir <COMMAND> --help
+```
+
 ---
 
-# Commands
+# Command Overview
 
-Current commands include:
+The current CLI provides the following operations:
 
 ```text
+init
 build
 stats
 inspect
+search
 insert
 remove
-search
-index
-generate
+update
+compact
+merge
+server
 completions
-help
 ```
 
-Use:
+The CLI entry point dispatches these commands into the corresponding command implementations.
 
-```powershell
-eir help
-```
-
-or:
-
-```powershell
-eir <COMMAND> --help
-```
-
-to see command-specific options.
+Some commands are intended primarily for local development and database maintenance.
 
 ---
 
-# Database Lifecycle
+# Database Layout
 
-An EIR database normally follows this lifecycle:
+An EIR database is no longer just a standalone serialized file.
+
+The `.eir` file is the **logical database identity**. Physical storage lives alongside it.
+
+A typical database looks like:
 
 ```text
-Dataset
-   │
-   ▼
-Build
-   │
-   ▼
-Database
-   │
-   ├── Inspect
-   ├── Search
-   ├── Insert
-   └── Remove
-          │
-          ▼
-      Rebuild indexes
+nutrition/
+├── nutrition.eir
+├── eir.toml
+├── segments/
+│   ├── 0000.deir
+│   └── 0001.deir
+└── wal/
 ```
 
-Database mutations update the stored entity collection and rebuild the search indexes so that subsequent searches operate on the current database contents.
+The layout is managed by `DatabasePaths` and `StorageConfig`.
+
+### Files and directories
+
+| Path         | Purpose                          |
+| ------------ | -------------------------------- |
+| `<name>.eir` | Logical database identity        |
+| `eir.toml`   | Database/storage configuration   |
+| `segments/`  | Persistent DEIR storage segments |
+| `wal/`       | Write-ahead log                  |
+
+The database root is derived from the location of the `.eir` file when an existing database is opened.
+
+---
+
+# Initialize a Database
+
+Create an empty EIR database with:
+
+```powershell
+cargo eir init data nutrition
+```
+
+This creates:
+
+```text
+data/
+└── nutrition/
+    ├── nutrition.eir
+    ├── eir.toml
+    ├── segments/
+    └── wal/
+```
+
+The command accepts:
+
+```text
+eir init <PARENT> <NAME>
+```
+
+For example:
+
+```powershell
+cargo eir init data foods
+```
+
+The `init` command delegates database creation to `eir_core::engine::Engine::create`.
 
 ---
 
 # Build
 
-Build an EIR database from an entity dataset.
-
-## Usage
-
-```powershell
-eir build --input <DATASET> --output <DATABASE>
-```
-
-Example:
+Build a database from an entity dataset:
 
 ```powershell
 cargo eir build `
   --input fixtures/entities.json `
-  --output data/entities.eir
+  --database data/entities
 ```
 
-The build process converts the source entity data into the EIR database format.
+The command accepts:
+
+```text
+eir build --input <INPUT> --database <DATABASE>
+```
+
+The build pipeline:
+
+1. Loads the entity input.
+2. Maps input entities into EIR's internal representation.
+3. Builds registries for tags, sources, attribute keys and relationship types.
+4. Builds the search indexes.
+5. Creates the `Database`.
+6. Writes the resulting database to storage.
 
 The resulting database contains:
 
-- Entities
-- Aliases
-- Tags
-- Attributes
-- Relationships
-- Sources
-- Search indexes
-- Internal registries
+```text
+Database
+├── Entities
+├── Tag Registry
+├── Source Registry
+├── Attribute-Key Registry
+├── Relationship-Type Registry
+└── Indexes
+```
 
-The database is serialized to disk and can subsequently be opened by the other CLI commands.
+---
+
+# Entity Input
+
+EIR works with entity input documents.
+
+A minimal entity can look like:
+
+```json
+{
+  "id": 9100,
+  "aliases": ["Test Berry"],
+  "tags": ["test"],
+  "sources": [
+    {
+      "provider": "Test Source",
+      "verified": false
+    }
+  ],
+  "attributes": [],
+  "relationships": []
+}
+```
+
+Entities are identified by their `EntityID`.
+
+Entity data is converted into an internal `EntityDocument` when inserted into the database.
+
+Registries convert repeated strings such as tags, source names, attribute keys and relationship types into compact internal IDs.
 
 ---
 
 # Stats
 
-Display database statistics.
-
-## Usage
+Show database statistics:
 
 ```powershell
-eir stats <DATABASE>
+cargo eir stats data/entities/entities.eir
 ```
 
-Example:
-
-```powershell
-cargo eir stats data/entities.eir
-```
-
-Example output:
+The command reports:
 
 ```text
-# Database Statistics
+Database Statistics
+===================
 
 Entities:           46
 Tags:               43
 Sources:            2
-attributes:         15
+Attributes:         15
 Relationship Types: 5
 
-## Indexes
-
-Aliases:     89
-Trie:        89
-BK-Tree:     92
-Tokens:      74
-Tags:        43
-Sources:     2
+Indexes
+-------
+Aliases:       89
+Trie:          89
+Fuzzy Aliases: 92
+Tokens:        74
+Tags:          43
+Sources:       2
 Relationships: 39
 ```
 
-Statistics are useful for verifying that a database was built correctly and for checking the effect of database mutations.
+The exact numbers depend on the database.
 
-For example, inserting an entity can increase the entity count and index sizes, while removing it should remove the entity from the searchable index structures.
+Statistics are obtained from the in-memory `Database` representation and its indexes.
 
 ---
 
 # Inspect
 
-Inspect a single entity by ID.
-
-## Usage
+Inspect one or more entities:
 
 ```powershell
-eir inspect <DATABASE> --entity <ID>
+cargo eir inspect data/entities/entities.eir 9100
+```
+
+Multiple IDs can be supplied:
+
+```powershell
+cargo eir inspect data/entities/entities.eir 1000 1001 1002
+```
+
+The command accepts:
+
+```text
+eir inspect <DATABASE> <ENTITY>...
+```
+
+Use verbose mode to display internal registry IDs:
+
+```powershell
+cargo eir inspect data/entities/entities.eir 9100 --verbose
 ```
 
 Example:
-
-```powershell
-cargo eir inspect data/entities.eir --entity 9100
-```
-
-Example output:
 
 ```text
 Entity: 9100
 
 Names:
-Test Berry
+  Test Berry
 
 Tags:
-test
+  test
 
 Attributes:
 
 Relationships:
 
 Sources:
-test source
+  Test Source
 ```
 
-Inspection displays the entity document stored in the database, including:
+Verbose output can additionally show internal IDs for tags, attributes, relationships and sources.
 
-- Entity ID
-- Names and aliases
-- Tags
-- Attributes
-- Relationships
-- Sources
-
-If the entity does not exist, the command exits with an error:
+If an entity is missing, the command reports:
 
 ```text
-Error: Entity not found
+Entity 9100 not found
 ```
+
+Inspection reads the entity directly from the database maintained by `Engine`.
 
 ---
 
 # Search
 
-Search entities using the EIR query and search pipeline.
-
-## Usage
+Search a database:
 
 ```powershell
-eir search <DATABASE> <QUERY>
+cargo eir search data/entities/entities.eir "FizzBerry"
 ```
 
-Example:
+The optional result limit defaults to 10:
 
 ```powershell
-cargo eir search data/entities.eir "FizzBerry"
+cargo eir search data/entities/entities.eir "FizzBerry" --limit 20
 ```
+
+The command accepts:
+
+```text
+eir search <DATABASE> <QUERY> [--limit <N>]
+```
+
+Search results include:
+
+* entity alias
+* score
+* search signals
+* explanations
 
 Example:
 
@@ -246,728 +371,727 @@ Example:
 Search: FizzBerry
 
 FizzBerry Spark score=1.00
-Signals:
-Token
-PrefixAlias
-ExactAlias
-FuzzyAlias
-Why:
-ExactAlias { alias: "fizzberry" }
-PrefixAlias { alias: "fizzberry" }
-FuzzyAlias { alias: "fizzberry" }
-Token { token: "fizzberry" }
+  Signals:
+    ExactAlias
+    PrefixAlias
+    Token
+  Why:
+    ExactAlias { ... }
 
 FizzBerry Energy Blast score=0.78
-Signals:
-Token
-PrefixAlias
-Why:
-PrefixAlias { alias: "fizzberry" }
-Token { token: "fizzberry" }
+  Signals:
+    PrefixAlias
+    Token
+  Why:
+    PrefixAlias { ... }
 ```
 
-Search results combine multiple signals and are ranked by the EIR ranker.
-
-A result may contain several signals simultaneously. This allows strong matches to accumulate evidence rather than relying on a single search strategy.
+The CLI obtains results through `Engine::search()`, which delegates to the resolver/search implementation in `eir-core`.
 
 ---
 
-# Search Types
+# Search Architecture
 
-EIR currently combines several search strategies.
+Search is separated into several stages.
 
-## Exact Alias
-
-Matches an entity alias exactly after normalization.
-
-Example:
-
-```powershell
-eir search data/entities.eir "FizzBerry"
-```
-
-An exact alias can produce a high-confidence result:
+At a high level:
 
 ```text
-FizzBerry Spark score=1.00
-```
-
-The explanation identifies the exact alias signal.
-
----
-
-## Prefix Alias
-
-Matches aliases beginning with the query.
-
-Example:
-
-```powershell
-eir search data/entities.eir "Fizz"
-```
-
-This can return entities such as:
-
-```text
-FizzBerry Spark
-FizzBerry Spark Zero
-FizzBerry Energy Blast
-```
-
-Prefix matches are useful for autocomplete-style queries and incomplete names.
-
----
-
-## Fuzzy Alias
-
-The fuzzy alias index uses the BK-tree to find aliases that are close to the query.
-
-Example:
-
-```powershell
-eir search data/entities.eir "Fizzbery"
-```
-
-This allows minor spelling errors to still resolve to known entities.
-
----
-
-## Token Search
-
-Aliases are normalized and split into searchable tokens.
-
-For example:
-
-```text
-FizzBerry Spark Zero
-```
-
-produces searchable terms including:
-
-```text
-fizzberry
-spark
-zero
-```
-
-A query for an individual token can therefore match multiple entities.
-
-Example:
-
-```powershell
-eir search data/entities.eir "water"
-```
-
-may return:
-
-```text
-Crystal Spring Water
-PureSpring Sparkling Water
-PureSpring Mineral Water
-```
-
----
-
-## Tag Search
-
-Entities can be associated with tags.
-
-A tag query can identify entities belonging to that tag.
-
-Example:
-
-```powershell
-eir search data/entities.eir "drink"
-```
-
-A matching entity can contain:
-
-```text
-Signals:
-Tag
-```
-
-Tag matches are ranked separately from alias and token matches.
-
----
-
-## Attribute Search
-
-Attributes can be searched by key, value, or key/value pair.
-
-For example, an entity might contain:
-
-```text
-volume = 500ml
-```
-
-The query layer supports attribute-style queries using:
-
-```text
-key:value
-```
-
-The attribute indexes include:
-
-- Attribute key index
-- Attribute value index
-- Attribute key/value pair index
-
-An exact key/value match receives stronger evidence than a value-only match.
-
----
-
-## Source Search
-
-Entities can be associated with a registered source.
-
-For example:
-
-```text
-Open Food Facts
-```
-
-can be registered as a source and associated with multiple entities.
-
-Searching for a source can therefore return all entities originating from that source.
-
-Example:
-
-```powershell
-cargo eir search data/entities.eir "Open Food Facts"
-```
-
-Possible results:
-
-```text
-Golden Grain Crunch
-Aurora Tomato Soup
-FrostPeak Vegetable Pizza
-Crystal Spring Water
-...
-```
-
-The results contain a `Source` signal explaining the match.
-
----
-
-## Relationship Search
-
-EIR can resolve entities through relationships.
-
-For example:
-
-```text
-FizzBerry Spark
-    │
-    └── InstanceOf → Drink
-```
-
-Searching for the related entity can therefore produce both the directly matched entity and entities connected to it.
-
-Relationship results include information about:
-
-- Relationship type
-- Target entity
-- Source entity
-
-The relationship index makes target-based relationship lookup efficient.
-
----
-
-# Search Ranking
-
-Search results are ranked using multiple signals.
-
-The base confidence of the current search signals is approximately:
-
-| Match Type   | Base Score |
-| ------------ | ---------: |
-| Exact Alias  |       1.00 |
-| Prefix Alias |       0.80 |
-| Relationship |       0.70 |
-| Fuzzy Alias  |       0.60 |
-| Token        |       0.50 |
-| Tag          |       0.40 |
-| Attribute    |       0.30 |
-| Source       |       0.20 |
-
-These values are base signal strengths rather than a guarantee that every final result will have exactly that score.
-
-Multiple signals can contribute to the same candidate.
-
-For example:
-
-```text
-FizzBerry Spark score=1.00
-
-Signals:
-Token
-PrefixAlias
-ExactAlias
-FuzzyAlias
-```
-
-This means the entity was independently supported by several search strategies.
-
-The ranker can also apply bonuses when an entity receives multiple matching signals.
-
----
-
-# Insert
-
-Insert an entity into an existing EIR database.
-
-## Usage
-
-```powershell
-eir insert <DATABASE> <ENTITY>
-```
-
-The input is an entity JSON document.
-
-Example:
-
-```powershell
-cargo eir insert data/entities.eir fixtures/test-entity.json
-```
-
-A test entity might contain:
-
-```json
-{
-  "id": 9100,
-  "aliases": ["Test Berry"],
-  "tags": ["test"],
-  "attributes": [],
-  "relationships": [],
-  "sources": [
-    {
-      "provider": "test source"
-    }
-  ]
-}
-```
-
-After insertion, the entity can be inspected:
-
-```powershell
-cargo eir inspect data/entities.eir --entity 9100
-```
-
-Result:
-
-```text
-Entity: 9100
-
-Names:
-Test Berry
-
-Tags:
-test
-
-Attributes:
-
-Relationships:
-
-Sources:
-test source
-```
-
-The entity is also immediately searchable:
-
-```powershell
-cargo eir search data/entities.eir "Test Berry"
-```
-
-Example:
-
-```text
-Search: Test Berry
-
-Test Berry score=1.00
-Signals:
-ExactAlias
-PrefixAlias
-FuzzyAlias
-```
-
-### Index updates
-
-After an insertion, EIR rebuilds its search indexes from the current entity collection.
-
-This guarantees that all indexes remain consistent with the stored documents.
-
-The rebuilt indexes include:
-
-- Alias index
-- Prefix trie
-- BK-tree
-- Token inverted index
-- Tag posting lists
-- Source posting lists
-- Attribute indexes
-- Relationship indexes
-
----
-
-# Remove
-
-Remove an entity from an EIR database.
-
-## Usage
-
-```powershell
-eir remove <DATABASE> --entity <ID>
-```
-
-Example:
-
-```powershell
-cargo eir remove data/entities.eir --entity 9100
-```
-
-After removal, inspecting the entity returns:
-
-```text
-Error: Entity not found
-```
-
-Searching for the removed entity also returns no results:
-
-```powershell
-cargo eir search data/entities.eir "Test Berry"
-```
-
-Result:
-
-```text
-Search: Test Berry
-```
-
-with no matching entities.
-
-### Index updates
-
-Removing an entity also rebuilds the search indexes.
-
-This is important because an entity must disappear not only from the entity collection but from every search structure that could return it.
-
-The operation therefore maintains the invariant:
-
-```text
-database.entities
-        │
+Query
+  │
+  ▼
+Parser
+  │
+  ▼
+Intent / Filters
+  │
+  ▼
+Planner
+  │
+  ▼
+Search Executor
+  │
+  ├── Exact Alias
+  ├── Prefix Alias
+  ├── Fuzzy Alias
+  ├── Token
+  ├── Tag
+  ├── Attribute
+  └── Relationship
         │
         ▼
-   IndexBuilder
+    Candidates
         │
         ▼
-    all indexes
+      Ranker
+        │
+        ▼
+     Results
 ```
 
-The remaining entities are preserved and remain searchable.
+The query layer contains parsing, intent and filtering components. The search layer contains planning, execution, candidates, signals, ranking and results.
 
----
-
-# Persistence
-
-Database mutations are persisted to the `.eir` database file.
-
-For example:
-
-```powershell
-cargo eir insert data/entities.eir fixtures/test-entity.json
-cargo eir remove data/entities.eir --entity 9100
-```
-
-The resulting database can be closed and reopened without losing the mutation.
-
-This is verified by loading the database again and constructing a resolver from the persisted indexes and entity documents.
-
----
-
-# Index Management
-
-EIR maintains several specialized indexes.
-
-Current index structures include:
-
-| Index                     | Purpose                        |
-| ------------------------- | ------------------------------ |
-| Alias index               | Exact alias lookup             |
-| Trie                      | Prefix matching                |
-| BK-tree                   | Fuzzy alias matching           |
-| Inverted index            | Token lookup                   |
-| Tag posting list          | Tag → entities                 |
-| Source posting list       | Source → entities              |
-| Attribute key index       | Attribute key → entities       |
-| Attribute value index     | Attribute value → entities     |
-| Attribute pair index      | Key/value → entities           |
-| Relationship posting list | Relationship target → entities |
-
-The indexes are rebuilt from the database's entity documents when required.
-
-This currently favors correctness and deterministic index construction over incremental mutation complexity.
-
----
-
-# Generate
-
-Generate test datasets.
-
-Example:
-
-```powershell
-cargo eir generate
-```
-
-Generated data is useful for:
-
-- Development
-- Unit testing
-- CLI testing
-- Search experiments
-- Benchmarking
-- Testing relationships
-- Testing tags and attributes
-
----
-
-# Shell Completions
-
-Generate shell completion scripts.
-
-Supported shells include:
-
-- Bash
-- Zsh
-- Fish
-- PowerShell
-- Elvish
-
-Example:
-
-```powershell
-eir completions PowerShell
-```
-
----
-
-# Development Workflow
-
-A typical EIR development workflow is:
-
-## 1. Generate data
-
-```powershell
-cargo eir generate
-```
-
-## 2. Build a database
-
-```powershell
-cargo eir build `
-  --input fixtures/entities.json `
-  --output data/entities.eir
-```
-
-## 3. Inspect an entity
-
-```powershell
-cargo eir inspect data/entities.eir --entity 1
-```
-
-## 4. Check database statistics
-
-```powershell
-cargo eir stats data/entities.eir
-```
-
-## 5. Test search
-
-```powershell
-cargo eir search data/entities.eir "FizzBerry"
-```
-
-## 6. Insert an entity
-
-```powershell
-cargo eir insert data/entities.eir fixtures/test-entity.json
-```
-
-## 7. Verify the inserted entity
-
-```powershell
-cargo eir inspect data/entities.eir --entity 9100
-```
-
-## 8. Verify searchability
-
-```powershell
-cargo eir search data/entities.eir "Test Berry"
-```
-
-## 9. Remove the entity
-
-```powershell
-cargo eir remove data/entities.eir --entity 9100
-```
-
-## 10. Verify removal
-
-```powershell
-cargo eir inspect data/entities.eir --entity 9100
-cargo eir search data/entities.eir "Test Berry"
-```
-
-The first command should report:
-
-```text
-Error: Entity not found
-```
-
-and the search should return no results.
-
----
-
-# Testing
-
-The EIR core library contains tests covering:
-
-- Database creation
-- Entity storage
-- Entity lookup
-- Entity insertion
-- Entity removal
-- Search index updates
-- Persistence after removal
-- Exact alias search
-- Prefix search
-- Fuzzy search
-- Token search
-- Tag search
-- Attribute queries
-- Relationship queries
-- Search planning
-- Search ranking
-- Registry persistence
-- Database serialization
-
-Run the complete EIR core test suite with:
-
-```powershell
-cargo test -p eir-core
-```
-
-A successful run should report all tests passing.
-
----
-
-# Architecture
-
-The CLI sits on top of the EIR core database and search engine.
-
-The important separation is:
+This means the CLI is intentionally thin:
 
 ```text
 eir-cli
    │
    ▼
-eir-core
+Engine
    │
    ├── Database
-   │      ├── Entities
-   │      ├── Registries
-   │      └── Indexes
    │
-   ├── Query
-   │      ├── Parser
-   │      ├── Intent
-   │      └── Planner
-   │
-   └── Search
-          ├── Operators
-          ├── Candidates
-          ├── Ranker
-          └── Results
+   └── Resolver
+          │
+          └── Search pipeline
 ```
 
-The CLI is therefore an interface to the database and search infrastructure rather than containing the search implementation itself.
+---
+
+# Search Indexes
+
+EIR maintains specialized indexes for different search operations.
+
+The current database index set includes:
+
+| Index                | Purpose                   |
+| -------------------- | ------------------------- |
+| Alias index          | Exact alias lookup        |
+| Trie                 | Prefix alias lookup       |
+| BK-tree              | Fuzzy alias lookup        |
+| Inverted index       | Token lookup              |
+| Tag posting lists    | Tag → entities            |
+| Source posting lists | Source → entities         |
+| Attribute indexes    | Attribute lookup          |
+| Relationship indexes | Relationship-based lookup |
+
+The index structures are represented by `Indexes` and built by `IndexBuilder`.
+
+---
+
+# Insert
+
+Insert entities into an existing database:
+
+```powershell
+cargo eir insert data/entities/entities.eir fixtures/test-entity.json
+```
+
+The input file may contain one or more entities.
+
+The CLI:
+
+1. Opens the existing database.
+2. Loads the entities.
+3. Inserts each entity through `Engine`.
+4. Flushes the database.
+
+An entity with an existing ID is rejected.
+
+For example:
+
+```text
+EntityAlreadyExists
+```
+
+The database itself also rebuilds its indexes after an insertion so the resolver reflects the new entity immediately.
+
+---
+
+# Update
+
+Replace an existing entity:
+
+```powershell
+cargo eir update `
+  data/entities/entities.eir `
+  9100 `
+  --input fixtures/test-entity-updated.json
+```
+
+The update input must contain exactly one entity.
+
+The entity ID in the input must match the ID supplied to the command.
+
+For example:
+
+```text
+eir update <DATABASE> <ENTITY> --input <JSON>
+```
+
+The command validates:
+
+* exactly one input entity
+* matching entity IDs
+
+before applying the update. It then flushes the updated database.
+
+---
+
+# Remove
+
+Remove one or more entities:
+
+```powershell
+cargo eir remove data/entities/entities.eir 9100
+```
+
+Multiple IDs can be supplied:
+
+```powershell
+cargo eir remove data/entities/entities.eir 9100 9101 9102
+```
+
+The command accepts:
+
+```text
+eir remove <DATABASE> <ENTITY>...
+```
+
+Each entity is removed through `Engine::remove()`.
+
+After removal, the database rebuilds its search indexes so the removed entity is no longer searchable.
+
+---
+
+# Persistence and WAL
+
+Database mutations are written through the storage backend.
+
+The current engine uses a write-ahead log (WAL) for mutations.
+
+Conceptually:
+
+```text
+Insert / Remove
+      │
+      ▼
+     WAL
+      │
+      ▼
+  Database
+      │
+      ▼
+  Resolver
+```
+
+When a database is opened, EIR:
+
+1. Resolves the physical database layout.
+2. Loads the persisted database snapshot.
+3. Replays pending WAL operations.
+4. Reconstructs the resolver.
+
+This allows unflushed mutations to be recovered after reopening the database.
+
+---
+
+# Flush
+
+`Engine::flush()` writes the current database snapshot to persistent storage.
+
+The CLI mutation commands use this mechanism after their operation completes.
+
+For example:
+
+```text
+insert
+  │
+  ├── append WAL operation
+  ├── update in-memory database
+  ├── rebuild resolver
+  └── flush
+```
+
+The WAL is truncated after a successful flush.
+
+---
+
+# Compact
+
+Compaction rewrites persistent storage to reclaim space from obsolete data.
+
+Run:
+
+```powershell
+cargo eir compact data/entities/entities.eir
+```
+
+Output:
+
+```text
+Database Compacted
+==================
+
+Before:    23.5 KB
+After:     18.7 KB
+Reclaimed: 4.8 KB
+Savings:   20.4%
+```
+
+The actual values depend on the database.
+
+Compaction operates on the physical database storage, including its segments.
+
+It does not change the logical entity contents.
+
+The command reports:
+
+* storage size before compaction
+* storage size after compaction
+* reclaimed space
+* percentage savings
+
+The underlying `Engine::compact()` operation rewrites storage from the current database record.
+
+---
+
+# Merge
+
+Merge two EIR databases into a new output database:
+
+```powershell
+cargo eir merge `
+  data/left/left.eir `
+  data/right/right.eir `
+  data/merged/merged.eir
+```
+
+The command accepts:
+
+```text
+eir merge <LEFT> <RIGHT> <OUTPUT>
+```
+
+The merge operation:
+
+1. Loads both databases.
+2. Validates entity IDs.
+3. Combines the entity collections.
+4. Remaps registry IDs where necessary.
+5. Rebuilds indexes.
+6. Writes the merged database.
+
+Duplicate entity IDs are rejected rather than silently overwritten.
+
+The merge operation is designed to be atomic: validation occurs before the destination database is modified.
+
+The CLI reports:
+
+```text
+Merge complete.
+Entities added: 42
+Entities skipped: 0
+```
+
+---
+
+# Server
+
+The CLI contains the server command structure:
+
+```powershell
+cargo eir server start data/entities/entities.eir
+```
+
+The server command accepts:
+
+```text
+eir server start <DATABASE> [--host <HOST>] [--port <PORT>]
+```
+
+Defaults:
+
+```text
+host = 127.0.0.1
+port = 8765
+```
+
+The CLI also exposes:
+
+```powershell
+cargo eir server close
+```
+
+The server command is currently part of the CLI surface, but server functionality should be considered separate from the core local database/search architecture.
+
+---
+
+# Shell Completions
+
+Generate shell completion scripts with:
+
+```powershell
+cargo eir completions powershell
+```
+
+Supported shells are:
+
+```text
+bash
+zsh
+fish
+powershell
+elvish
+```
+
+The CLI uses `clap_complete` to generate completions from the command definition.
+
+---
+
+# Typical Development Workflow
+
+A typical workflow for creating and testing a database is:
+
+## 1. Initialize
+
+```powershell
+cargo eir init data nutrition
+```
+
+## 2. Build
+
+```powershell
+cargo eir build `
+  --input fixtures/entities.json `
+  --database data/nutrition
+```
+
+## 3. Inspect
+
+```powershell
+cargo eir inspect `
+  data/nutrition/nutrition.eir `
+  1000
+```
+
+## 4. Check statistics
+
+```powershell
+cargo eir stats data/nutrition/nutrition.eir
+```
+
+## 5. Search
+
+```powershell
+cargo eir search `
+  data/nutrition/nutrition.eir `
+  "FizzBerry"
+```
+
+## 6. Insert
+
+```powershell
+cargo eir insert `
+  data/nutrition/nutrition.eir `
+  fixtures/test-entity.json
+```
+
+## 7. Update
+
+```powershell
+cargo eir update `
+  data/nutrition/nutrition.eir `
+  9100 `
+  --input fixtures/test-entity-updated.json
+```
+
+## 8. Remove
+
+```powershell
+cargo eir remove `
+  data/nutrition/nutrition.eir `
+  9100
+```
+
+## 9. Compact
+
+```powershell
+cargo eir compact `
+  data/nutrition/nutrition.eir
+```
+
+---
+
+# Architecture
+
+The current EIR architecture is intentionally divided into layers.
+
+```text
+                    eir-cli
+                       │
+                       ▼
+                    Engine
+                       │
+             ┌─────────┴─────────┐
+             ▼                   ▼
+         Database             Resolver
+             │                   │
+       ┌─────┼─────┐       ┌─────┴─────┐
+       │     │     │       │           │
+   Entities Registries Indexes       Search
+                                     │
+                              ┌──────┼──────┐
+                              ▼      ▼      ▼
+                           Query  Planner  Ranker
+```
+
+## `eir-cli`
+
+Provides the command-line interface.
+
+## `Engine`
+
+Provides the high-level database lifecycle API:
+
+* create
+* open
+* search
+* inspect
+* insert
+* remove
+* update
+* flush
+* compact
+
+The engine owns the storage backend, database and resolver.
+
+## `Database`
+
+Stores:
+
+```text
+Entities
+Registries
+Indexes
+```
+
+The registries include:
+
+* tags
+* sources
+* attribute keys
+* relationship types
+
+The database can rebuild indexes from the entity collection.
+
+## Storage
+
+The storage subsystem contains:
+
+```text
+Backend
+DEIR segments
+Segment manager
+Store
+WAL
+Registries
+Posting lists
+Indexes
+```
+
+These components provide the persistent storage layer beneath the logical database.
+
+## Query
+
+The query layer is responsible for turning user input into structured search intent and filters.
+
+```text
+Query
+├── Parser
+├── Intent
+├── Filters
+└── Types
+```
+
+## Search
+
+The search layer executes the planned operations and ranks candidates.
+
+```text
+Search
+├── Planner
+├── Executor
+├── Operators
+├── Candidate
+├── Signal
+├── Ranker
+├── Context
+└── Result
+```
+
+---
+
+# Database Lifecycle
+
+The current lifecycle is:
+
+```text
+                 Entity Dataset
+                       │
+                       ▼
+                     Build
+                       │
+                       ▼
+                 Logical Database
+                       │
+              ┌────────┼────────┐
+              │        │        │
+           Search   Inspect   Stats
+              │
+        ┌─────┼─────────────┐
+        │     │             │
+      Insert Update       Remove
+        │     │             │
+        └─────┼─────────────┘
+              │
+              ▼
+             WAL
+              │
+              ▼
+           Snapshot
+              │
+              ▼
+          Compaction
+```
+
+The important distinction is that **logical database state** and **physical storage** are separate concerns.
+
+The `.eir` path identifies the database, while the storage backend manages snapshots, segments and WAL data.
+
+---
+
+# Index Consistency
+
+EIR currently favors deterministic index rebuilding over maintaining complex incremental index mutations.
+
+When an entity is inserted or removed:
+
+```text
+Database entities
+       │
+       ▼
+ IndexBuilder
+       │
+       ▼
+ All search indexes
+```
+
+This ensures the resolver is reconstructed from the current entity collection.
+
+The indexes therefore remain consistent with the database documents after mutations.
+
+---
+
+# Testing
+
+The core library contains tests for the database, persistence, storage and search layers.
+
+Run the core tests:
+
+```powershell
+cargo test -p eir-core
+```
+
+Run the CLI tests:
+
+```powershell
+cargo test -p eir-cli
+```
+
+Run the complete workspace:
+
+```powershell
+cargo test --workspace
+```
+
+Important areas covered by the current test suite include:
+
+* database creation
+* database opening
+* persistence
+* WAL recovery
+* insertion
+* removal
+* compaction
+* merging
+* duplicate entity detection
+* index rebuilding
+* exact alias search
+* prefix search
+* fuzzy search
+* token search
+* tags
+* attributes
+* relationships
+* query planning
+* ranking
 
 ---
 
 # Current Limitations
 
-The current implementation favors correctness and simple deterministic rebuilding.
+EIR is still under active development.
+
+The current repository describes the CLI, storage and search layers as functional, while the server remains incomplete.
 
 In particular:
 
-- Database mutations rebuild indexes rather than updating every index incrementally.
-- Search output is currently human-readable rather than a stable machine-readable format.
-- Interactive search is not yet implemented.
-- Index benchmarking is not yet exposed as a dedicated CLI workflow.
-- Relationship graph visualization is not yet available from the CLI.
+* The server interface exists, but the server implementation is not yet complete.
+* Search output is currently intended for human-readable CLI use.
+* Database mutations rebuild search indexes.
+* The CLI does not yet expose every internal storage/index operation.
+* The database format is still evolving.
 
-These can be added as the underlying EIR APIs stabilize.
-
----
-
-# Future Improvements
-
-Potential future CLI features include:
-
-- Interactive search mode
-- JSON output mode
-- Export resolved entities
-- Index benchmarking
-- Search explanation mode
-- Relationship graph inspection
-- Database migration tools
-- Import/export commands
-- Batch insert/remove operations
-- Index rebuild commands
-- Database validation and integrity checks
+Applications depending on EIR should therefore expect database and API formats to evolve until a stable format/versioning policy is established.
 
 ---
 
 # Summary
 
-The EIR CLI provides a developer interface for working with local entity-resolution databases.
+The EIR CLI is a management and development interface over the EIR engine.
 
-It currently supports:
-
-- Building databases
-- Inspecting entities
-- Searching entities
-- Inserting entities
-- Removing entities
-- Inspecting database statistics
-- Working with aliases and tokens
-- Searching tags
-- Searching attributes
-- Searching sources
-- Resolving relationships
-- Generating test datasets
-- Generating shell completions
-- Testing and debugging search behavior
-
-The CLI provides a complete development loop:
+Its primary responsibilities are:
 
 ```text
+Create
+  ↓
 Build
   ↓
-Inspect
+Inspect / Stats / Search
   ↓
-Search
+Insert / Update / Remove
   ↓
-Insert / Remove
+Flush / Recover
   ↓
-Rebuild indexes
+Compact
   ↓
-Search again
-  ↓
-Verify persistence
+Merge
 ```
 
-This makes `eir` the primary development and data-management tool for building and maintaining EIR datasets and search infrastructure.
+The CLI itself is intentionally thin. The important functionality lives in `eir-core`:
+
+```text
+eir-cli
+   │
+   ▼
+Engine
+   │
+   ├── Database
+   │     ├── Entities
+   │     ├── Registries
+   │     └── Indexes
+   │
+   ├── Storage
+   │     ├── Segments
+   │     └── WAL
+   │
+   └── Resolver
+         │
+         ├── Query
+         ├── Planner
+         ├── Executor
+         └── Ranker
+```
+
+This architecture allows the same database and search engine to be used by the CLI, future server interfaces, and applications embedding EIR directly.
