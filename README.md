@@ -19,10 +19,10 @@ Traditional lookup systems often assume that the identifier being searched for i
 EIR is designed for the opposite situation:
 
 ```text
-Input
-  │
-  │ "fizzberry"
-  ▼
+         Input
+           │
+           │ "fizzberry"
+           ▼
 ┌──────────────────────┐
 │ Entity Identifier    │
 │ Resolver             │
