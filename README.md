@@ -1047,6 +1047,7 @@ Areas of development include:
 * Performance benchmarking
 * Larger real-world datasets
 * Improved CLI ergonomics
+* A way to support CSV imports
 
 ---
 
