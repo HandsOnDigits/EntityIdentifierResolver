@@ -94,3 +94,6 @@ define_id! {
     /// Identifies a relationship type in the relationship-type registry.
     RelationshipTypeID
 }
+
+// Yha, It may be a bit of an anit patten to use macros for this,
+// but at least, I don't forget to add the right drive.
