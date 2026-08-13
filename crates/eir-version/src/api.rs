@@ -363,4 +363,77 @@ mod test {
 
         Ok(parent.join(name).join(format!("{name}.eir")))
     }
+
+    #[test]
+    fn merge_rejects_output_equal_to_left() -> Result<()> {
+        let temp = tempdir()?;
+
+        let left = create_database(temp.path(), "left", 1000, "Left Entity")?;
+        let right = create_database(temp.path(), "right", 2000, "Right Entity")?;
+
+        let error = merge(&left, &right, &left).unwrap_err();
+
+        assert!(matches!(error, Error::OutputInputCollision));
+
+        Ok(())
+    }
+
+    #[test]
+    fn merge_rejects_output_equal_to_right() -> Result<()> {
+        let temp = tempdir()?;
+
+        let left = create_database(temp.path(), "left", 1000, "Left Entity")?;
+        let right = create_database(temp.path(), "right", 2000, "Right Entity")?;
+
+        let error = merge(&left, &right, &right).unwrap_err();
+
+        assert!(matches!(error, Error::OutputInputCollision));
+
+        Ok(())
+    }
+
+    #[test]
+    fn merge_rejects_existing_output() -> Result<()> {
+        let temp = tempdir()?;
+
+        let left = create_database(temp.path(), "left", 1000, "Left Entity")?;
+        let right = create_database(temp.path(), "right", 2000, "Right Entity")?;
+
+        let output = temp.path().join("merged").join("merged.eir");
+
+        // Create the output database first.
+        let _existing = create_database(temp.path(), "merged", 9999, "Existing")?;
+
+        let error = merge(&left, &right, &output).unwrap_err();
+
+        assert!(matches!(error, Error::OutputExists(_)));
+
+        Ok(())
+    }
+
+    #[test]
+    fn merge_rebuilds_search_indexes() -> Result<()> {
+        let temp = tempdir()?;
+
+        let left = create_database(temp.path(), "left", 1000, "Aurora Foods")?;
+
+        let right = create_database(temp.path(), "right", 2000, "Golden Harvest")?;
+
+        let output = temp.path().join("merged").join("merged.eir");
+
+        let report = merge(&left, &right, &output)?;
+
+        assert_eq!(report.entities_added, 2);
+        assert_eq!(report.entities_skipped, 0);
+
+        let merged = Engine::open(&output)?;
+        let database = merged.database();
+
+        assert!(!database.indexes.alias.is_empty());
+        assert!(!database.indexes.trie.is_empty());
+        assert!(!database.indexes.bk_tree.is_empty());
+        assert!(!database.indexes.inverted.tokens.is_empty());
+
+        Ok(())
+    }
 }
