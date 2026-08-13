@@ -56,7 +56,10 @@ mod test {
 
     use tempfile::tempdir;
 
-    use eir_core::entity::{input::EntityInput, prelude::types::EntityID};
+    use eir_core::entity::{
+        input::EntityInput,
+        prelude::types::{EntityID, RelationshipType},
+    };
 
     #[test]
     fn merge_combines_two_databases() -> Result<()> {
@@ -230,6 +233,130 @@ mod test {
                 .collect(),
             attributes: vec![],
             relationships: vec![],
+        })?;
+
+        engine.flush()?;
+
+        Ok(parent.join(name).join(format!("{name}.eir")))
+    }
+
+    #[test]
+    fn merge_remaps_attribute_keys_and_relationship_types() -> Result<()> {
+        let temp = tempdir()?;
+
+        let left = create_database_with_attributes_and_relationships(
+            temp.path(),
+            "left",
+            1000,
+            "Left Entity",
+            "brand",
+            "Acme",
+            "manufacturer",
+            9000,
+        )?;
+
+        let right = create_database_with_attributes_and_relationships(
+            temp.path(),
+            "right",
+            2000,
+            "Right Entity",
+            "country",
+            "Denmark",
+            "origin",
+            9001,
+        )?;
+
+        let output = temp.path().join("merged").join("merged.eir");
+
+        println!(
+            "left attribute keys: {:?}",
+            Engine::open(&left)?
+                .database()
+                .attribute_keys
+                .iter()
+                .collect::<Vec<_>>()
+        );
+
+        let report = merge(&left, &right, &output)?;
+
+        assert_eq!(report.entities_added, 2);
+        assert_eq!(report.entities_skipped, 0);
+
+        let merged = Engine::open(&output)?;
+
+        assert_eq!(merged.database().attribute_keys.len(), 2);
+        assert_eq!(merged.database().relationship_types.len(), 2);
+
+        let left_entity = merged.entity(EntityID::new(1000)).unwrap();
+        let right_entity = merged.entity(EntityID::new(2000)).unwrap();
+
+        // Attribute keys must resolve to their logical names after merging.
+        let left_attribute_keys: Vec<_> = left_entity
+            .attributes
+            .iter()
+            .filter_map(|attribute| merged.database().attribute_keys.get(attribute.key))
+            .collect();
+
+        let right_attribute_keys: Vec<_> = right_entity
+            .attributes
+            .iter()
+            .filter_map(|attribute| merged.database().attribute_keys.get(attribute.key))
+            .collect();
+
+        assert_eq!(left_attribute_keys, vec!["brand"]);
+        assert_eq!(right_attribute_keys, vec!["country"]);
+
+        let left_relationship_types: Vec<_> = left_entity
+            .relationships
+            .iter()
+            .filter_map(|relationship| match relationship.kind {
+                RelationshipType::Custom(id) => merged.database().relationship_types.get(id),
+                _ => None,
+            })
+            .collect();
+
+        let right_relationship_types: Vec<_> = right_entity
+            .relationships
+            .iter()
+            .filter_map(|relationship| match relationship.kind {
+                RelationshipType::Custom(id) => merged.database().relationship_types.get(id),
+                _ => None,
+            })
+            .collect();
+
+        assert_eq!(left_relationship_types, vec!["manufacturer"]);
+        assert_eq!(right_relationship_types, vec!["origin"]);
+
+        Ok(())
+    }
+
+    fn create_database_with_attributes_and_relationships(
+        parent: &Path,
+        name: &str,
+        id: usize,
+        alias: &str,
+        attribute_key: &str,
+        attribute_value: &str,
+        relationship_kind: &str,
+        relationship_target: usize,
+    ) -> Result<std::path::PathBuf> {
+        use eir_core::entity::input::{AttributesInput, RelationshipInput};
+
+        let mut engine = Engine::create(parent, name)?;
+
+        engine.insert(EntityInput {
+            id: EntityID::new(id),
+            aliases: vec![alias.into()],
+            tags: vec![],
+            sources: vec![],
+            attributes: vec![AttributesInput {
+                key: attribute_key.into(),
+                value: attribute_value.into(),
+            }],
+            relationships: vec![RelationshipInput {
+                kind: relationship_kind.into(),
+                target: EntityID::new(relationship_target),
+            }],
         })?;
 
         engine.flush()?;
