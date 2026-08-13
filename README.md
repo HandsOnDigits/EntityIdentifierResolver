@@ -620,21 +620,6 @@ EIR is designed around a few simple principles:
 - [ ] HTTP server
 - [ ] API
 - [ ] TypeScript client
-
----
-
-## 🧭 Current Priority
-
-- [ ] Finish and stabilize the database lifecycle
-- [ ] Keep CLI and documentation synchronized
-- [ ] Improve search/ranking quality
-- [ ] Improve incremental indexing
-- [ ] Add performance benchmarks
-- [ ] Finalize database format/versioning
-- [ ] Build the HTTP API
-- [ ] Make the documentation easier to follow
-- [ ] Include missing parts of the documentation
-- [ ] Write more examples
 :::
 ## License
 
