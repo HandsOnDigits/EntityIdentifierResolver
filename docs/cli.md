@@ -830,10 +830,10 @@ The current EIR architecture is intentionally divided into layers.
        ┌─────┼─────┐       ┌─────┴─────┐
        │     │     │       │           │
    Entities Registries Indexes       Search
-                                     │
-                              ┌──────┼──────┐
-                              ▼      ▼      ▼
-                           Query  Planner  Ranker
+                                       │
+                                ┌──────┼──────┐
+                                ▼      ▼      ▼
+                             Query  Planner  Ranker
 ```
 
 ## `eir-cli`
