@@ -3,6 +3,7 @@ use clap::{Parser, Subcommand, ValueEnum};
 use crate::commands::{
     compact::CompactArgs, insert::InsertArgs, inspect::InspectArgs, merge::MergeArgs,
     remove::RemoveArgs, search::SearchArgs, server::ServerArgs, stats::StatsArgs,
+    update::UpdateArgs,
 };
 use std::path::PathBuf;
 
@@ -52,6 +53,9 @@ pub enum Commands {
 
     /// Compact database storage
     Compact(CompactArgs),
+
+    /// Update existing entity
+    Update(UpdateArgs),
 
     Merge(MergeArgs),
 

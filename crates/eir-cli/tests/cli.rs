@@ -337,3 +337,112 @@ fn merge_rejects_output_input_collision() {
         .failure()
         .stderr(predicate::str::contains("output"));
 }
+
+#[test]
+fn update_replaces_entity_and_persists() {
+    let temp = tempfile::tempdir().unwrap();
+
+    let parent = temp.path();
+    let database = parent.join("nutrition");
+    let database_file = database.join("nutrition.eir");
+
+    let fixture = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../fixtures/test-entity.json");
+
+    let update_fixture = parent.join("update.json");
+
+    std::fs::write(
+        &update_fixture,
+        r#"
+[
+  {
+    "id": 9100,
+    "aliases": ["Updated Berry"],
+    "tags": [],
+    "attributes": [],
+    "relationships": [],
+    "sources": []
+  }
+]
+"#,
+    )
+    .unwrap();
+
+    // Create database.
+    eir()
+        .args(["init"])
+        .arg(parent)
+        .arg("nutrition")
+        .assert()
+        .success();
+
+    // Insert the original entity.
+    eir()
+        .args(["insert"])
+        .arg(&database_file)
+        .arg(&fixture)
+        .assert()
+        .success();
+
+    // Verify the original identity is searchable.
+    eir()
+        .args(["search"])
+        .arg(&database_file)
+        .arg("Test Berry")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Test Berry"))
+        .stdout(predicate::str::contains("score=1.00"));
+
+    // Replace the entity.
+    eir()
+        .args(["update"])
+        .arg(&database_file)
+        .arg("9100")
+        .args(["--input"])
+        .arg(&update_fixture)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Updated entity 9100"));
+
+    // The new identity must be searchable.
+    eir()
+        .args(["search"])
+        .arg(&database_file)
+        .arg("Updated Berry")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Updated Berry"))
+        .stdout(predicate::str::contains("score=1.00"));
+
+    // The old identity must no longer be searchable.
+    eir()
+        .args(["search"])
+        .arg(&database_file)
+        .arg("Test Berry")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Search: Test Berry"))
+        .stdout(predicate::str::contains("score=").not());
+
+    // Verify the stored entity.
+    eir()
+        .args(["inspect"])
+        .arg(&database_file)
+        .arg("9100")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("9100"))
+        .stdout(predicate::str::contains("Updated Berry"))
+        .stdout(predicate::str::contains("Test Berry").not());
+
+    // Reopen through a new CLI process and verify persistence.
+    eir()
+        .args(["search"])
+        .arg(&database_file)
+        .arg("Updated Berry")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Updated Berry"))
+        .stdout(predicate::str::contains("score=1.00"));
+}

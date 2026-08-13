@@ -58,12 +58,8 @@ impl Database {
         }
     }
 
-    pub fn insert(&mut self, input: EntityInput) -> Result<()> {
-        if self.entities.iter().any(|e| e.id == input.id) {
-            return Err(Error::EntityAlreadyExists(input.id.to_string()));
-        }
-
-        let entity = EntityDocument {
+    fn build_entity(&mut self, input: EntityInput) -> EntityDocument {
+        EntityDocument {
             id: input.id,
 
             aliases: input.aliases.into_iter().collect(),
@@ -95,11 +91,15 @@ impl Database {
                     ),
                 })
                 .collect(),
-        };
-
-        if self.entities.iter().any(|e| e.id == entity.id) {
-            return Err(Error::EntityAlreadyExists(entity.id.index().to_string()));
         }
+    }
+
+    pub fn insert(&mut self, input: EntityInput) -> Result<()> {
+        if self.entities.iter().any(|e| e.id == input.id) {
+            return Err(Error::EntityAlreadyExists(input.id.to_string()));
+        }
+
+        let entity = self.build_entity(input);
 
         self.entities.push(entity);
 
@@ -114,9 +114,24 @@ impl Database {
         self.entities.retain(|entity| entity.id != id);
 
         if self.entities.len() == before {
-            return Err(Error::EntityNotFound(id.index()));
+            return Err(Error::EntityNotFound(id));
         }
 
+        self.rebuild_indexes();
+
+        Ok(())
+    }
+
+    pub fn update(&mut self, input: EntityInput) -> Result<()> {
+        let index = self
+            .entities
+            .iter()
+            .position(|entity| entity.id == input.id)
+            .ok_or(Error::EntityNotFound(input.id))?;
+
+        let entity = self.build_entity(input);
+
+        self.entities[index] = entity;
         self.rebuild_indexes();
 
         Ok(())

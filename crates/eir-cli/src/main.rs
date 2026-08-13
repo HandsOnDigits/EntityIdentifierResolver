@@ -67,6 +67,10 @@ fn main() -> anyhow::Result<()> {
             commands::compact::execute(args)?;
         }
 
+        Commands::Update(args) => {
+            commands::update::execute(args)?;
+        }
+
         Commands::Merge(args) => {
             commands::merge::execute(args)?;
         }

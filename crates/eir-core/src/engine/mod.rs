@@ -111,6 +111,10 @@ impl Engine {
                 WalOperation::Remove(id) => {
                     database.remove(id)?;
                 }
+
+                WalOperation::Update(input) => {
+                    database.update(input)?;
+                }
             }
         }
 
@@ -156,12 +160,26 @@ impl Engine {
 
     pub fn remove(&mut self, id: EntityID) -> Result<()> {
         if self.database.entity(id).is_none() {
-            return Err(Error::EntityNotFound(id.index()));
+            return Err(Error::EntityNotFound(id));
         }
 
         self.backend.append(&WalOperation::Remove(id))?;
 
         self.database.remove(id)?;
+        self.resolver = self.database.resolver();
+
+        Ok(())
+    }
+
+    pub fn update(&mut self, input: EntityInput) -> Result<()> {
+        if self.database.entity(input.id).is_none() {
+            return Err(Error::EntityNotFound(input.id));
+        }
+
+        self.backend.append(&WalOperation::Update(input.clone()))?;
+
+        self.database.update(input)?;
+
         self.resolver = self.database.resolver();
 
         Ok(())
@@ -439,6 +457,104 @@ mod tests {
         for id in 90..100 {
             assert!(engine.entity(EntityID::new(id)).is_some());
         }
+
+        Ok(())
+    }
+
+    #[test]
+    fn engine_update_replaces_searchable_identity() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+
+        let mut engine = Engine::create(temp.path(), "test")?;
+
+        engine.insert(EntityInput {
+            id: EntityID::new(1001),
+            aliases: vec!["Old Name".into()],
+            tags: vec![],
+            attributes: vec![],
+            relationships: vec![],
+            sources: vec![],
+        })?;
+
+        assert!(!engine.search("Old Name").is_empty());
+
+        engine.update(EntityInput {
+            id: EntityID::new(1001),
+            aliases: vec!["New Name".into()],
+            tags: vec![],
+            attributes: vec![],
+            relationships: vec![],
+            sources: vec![],
+        })?;
+
+        assert!(!engine.search("New Name").is_empty());
+        assert!(engine.search("Old Name").is_empty());
+
+        let entity = engine.entity(EntityID::new(1001)).unwrap();
+
+        assert_eq!(entity.aliases, vec!["New Name".into()]);
+
+        Ok(())
+    }
+
+    #[test]
+    fn engine_recovers_unflushed_update_from_wal() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let path = temp.path().join("test").join("test.eir");
+
+        {
+            let mut engine = Engine::create(temp.path(), "test")?;
+
+            engine.insert(EntityInput {
+                id: EntityID::new(9600),
+                aliases: vec!["Original Berry".into()],
+                tags: vec![],
+                attributes: vec![],
+                relationships: vec![],
+                sources: vec![],
+            })?;
+
+            engine.flush()?;
+
+            engine.update(EntityInput {
+                id: EntityID::new(9600),
+                aliases: vec!["Updated Berry".into()],
+                tags: vec![],
+                attributes: vec![],
+                relationships: vec![],
+                sources: vec![],
+            })?;
+        }
+
+        let engine = Engine::open(&path)?;
+
+        assert!(engine.entity(EntityID::new(9600)).is_some());
+
+        assert!(!engine.search("Updated Berry").is_empty());
+        assert!(engine.search("Original Berry").is_empty());
+
+        Ok(())
+    }
+
+    #[test]
+    fn engine_does_not_wal_invalid_update() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let mut engine = Engine::create(temp.path(), "test")?;
+
+        let result = engine.update(EntityInput {
+            id: EntityID::new(9700),
+            aliases: vec!["Missing Berry".into()],
+            tags: vec![],
+            attributes: vec![],
+            relationships: vec![],
+            sources: vec![],
+        });
+
+        assert!(result.is_err());
+
+        let operations = engine.backend().wal().replay()?;
+
+        assert!(operations.is_empty());
 
         Ok(())
     }

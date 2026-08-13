@@ -8,3 +8,4 @@ pub mod remove;
 pub mod search;
 pub mod server;
 pub mod stats;
+pub mod update;

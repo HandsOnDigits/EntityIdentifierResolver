@@ -1,11 +1,13 @@
 use std::{error::Error as StdError, fmt};
 
+use crate::entity::prelude::types::EntityID;
+
 #[derive(Debug)]
 pub enum Error {
     Io(std::io::Error),
     Serialization(String),
     EntityAlreadyExists(String),
-    EntityNotFound(usize),
+    EntityNotFound(EntityID),
     InvalidFormat(String),
     UnsupportedVersion(u32),
     StorageLimit { max_segments: usize },

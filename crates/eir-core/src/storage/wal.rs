@@ -10,6 +10,7 @@ use crate::{
 pub enum WalOperation {
     Insert(EntityInput),
     Remove(EntityID),
+    Update(EntityInput),
 }
 
 pub struct Wal {
