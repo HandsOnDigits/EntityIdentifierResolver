@@ -280,3 +280,4 @@ EIR is designed around a few simple principles:
 
 See the repository for the current license.
 
+Contains AI Assisted Code
