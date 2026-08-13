@@ -8,6 +8,10 @@ use crate::prelude::{
     storage::{IndexBuilder, IndexRecord, Indexes, Registry, RegistryRecord},
 };
 
+/// Stores entities indexed by their unique `EntityID`.
+///
+/// Each ID may occur at most once in a database. Inserting an entity whose
+/// ID is already present is rejected.
 #[derive(Debug, Default, Clone)]
 pub struct Database {
     pub entities: Vec<EntityDocument>,
