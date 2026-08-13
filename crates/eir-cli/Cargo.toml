@@ -16,6 +16,7 @@ predicates = "3.1.4"
 assert_cmd = "2.2.2"
 
 eir-core = { path = "../eir-core" }
+eir-version = { path = "../eir-version" }
 
 [[bin]]
 name = "eir"

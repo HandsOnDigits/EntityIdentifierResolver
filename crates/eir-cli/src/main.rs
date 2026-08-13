@@ -67,6 +67,10 @@ fn main() -> anyhow::Result<()> {
             commands::compact::execute(args)?;
         }
 
+        Commands::Merge(args) => {
+            commands::merge::execute(args)?;
+        }
+
         Commands::Server(_args) => {
             todo!("Server is not yet setup");
         }

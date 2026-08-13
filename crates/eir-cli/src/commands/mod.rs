@@ -3,6 +3,7 @@ pub mod compact;
 pub mod init;
 pub mod insert;
 pub mod inspect;
+pub mod merge;
 pub mod remove;
 pub mod search;
 pub mod server;

@@ -267,6 +267,7 @@ dependencies = [
  "clap",
  "clap_complete",
  "eir-core",
+ "eir-version",
  "predicates",
  "rkyv",
  "serde",
