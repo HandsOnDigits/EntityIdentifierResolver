@@ -1,5 +1,6 @@
-#[cfg(test)]
 use std::path::Path;
+
+use rand::distr::{Alphanumeric, SampleString};
 
 use crate::{
     DatabaseRecord,
@@ -14,11 +15,15 @@ use super::{
 
 const SEGMENT_EXTENSION: &str = "deir";
 const RECORD_HEADER_SIZE: usize = 8;
+const SEGMENT_NAME_LENGTH: usize = 16;
+
+fn random_segment_name() -> String {
+    Alphanumeric.sample_string(&mut rand::rng(), SEGMENT_NAME_LENGTH)
+}
 
 pub struct SegmentManager {
     config: StorageConfig,
     active: Segment,
-    active_id: u64,
 }
 
 impl SegmentManager {
@@ -27,22 +32,24 @@ impl SegmentManager {
 
         std::fs::create_dir_all(&directory)?;
 
-        let path = directory.join(format!("000001.{SEGMENT_EXTENSION}"));
+        let active = Self::create_segment(&directory)?;
 
-        if path.exists() {
-            return Err(Error::Io(std::io::Error::new(
-                std::io::ErrorKind::AlreadyExists,
-                "storage already contains segments",
-            )));
+        Ok(Self { config, active })
+    }
+
+    fn create_segment(directory: &Path) -> Result<Segment> {
+        loop {
+            let name = random_segment_name();
+            let path = directory.join(format!("{name}.{SEGMENT_EXTENSION}"));
+
+            match Segment::create(&path) {
+                Ok(segment) => return Ok(segment),
+                Err(Error::Io(error)) if error.kind() == std::io::ErrorKind::AlreadyExists => {
+                    continue;
+                }
+                Err(error) => return Err(error),
+            }
         }
-
-        let active = Segment::create(&path)?;
-
-        Ok(Self {
-            config,
-            active,
-            active_id: 1,
-        })
     }
 
     pub fn open(config: StorageConfig) -> Result<Self> {
@@ -55,7 +62,7 @@ impl SegmentManager {
             )));
         }
 
-        let mut ids = Vec::new();
+        let mut segments = Vec::new();
 
         for entry in std::fs::read_dir(&directory)? {
             let entry = entry?;
@@ -65,40 +72,24 @@ impl SegmentManager {
                 continue;
             }
 
-            let Some(stem) = path.file_stem().and_then(|x| x.to_str()) else {
-                continue;
-            };
-
-            if let Ok(id) = stem.parse::<u64>() {
-                ids.push((id, path));
-            }
+            segments.push(path);
         }
 
-        let (active_id, active_path) =
-            ids.into_iter().max_by_key(|(id, _)| *id).ok_or_else(|| {
-                Error::Io(std::io::Error::new(
-                    std::io::ErrorKind::NotFound,
-                    "no segments found",
-                ))
-            })?;
+        let active_path = segments.into_iter().next().ok_or_else(|| {
+            Error::Io(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                "no segments found",
+            ))
+        })?;
 
         let active = Segment::open(active_path)?;
 
-        Ok(Self {
-            config,
-            active,
-            active_id,
-        })
+        Ok(Self { config, active })
     }
 
     #[cfg(test)]
     pub fn path(&self) -> &Path {
         self.active.path()
-    }
-
-    #[cfg(test)]
-    pub fn active_id(&self) -> u64 {
-        self.active_id
     }
 
     pub fn should_rotate(&self, payload_len: u64) -> Result<bool> {
@@ -117,27 +108,13 @@ impl SegmentManager {
     }
 
     pub fn rotate(&mut self) -> Result<()> {
-        let segment_count = self.segment_count()?;
-
-        if segment_count >= self.config.max_segments {
+        if self.segment_count()? >= self.config.max_segments {
             return Err(Error::StorageLimit {
                 max_segments: self.config.max_segments,
             });
         }
 
-        let next_id = self.active_id + 1;
-        let directory = self.config.segment_path();
-        let path = directory.join(format!("{next_id:06}.{SEGMENT_EXTENSION}"));
-
-        if path.exists() {
-            return Err(Error::Io(std::io::Error::new(
-                std::io::ErrorKind::AlreadyExists,
-                "next segment already exists",
-            )));
-        }
-
-        self.active = Segment::create(path)?;
-        self.active_id = next_id;
+        self.active = Self::create_segment(&self.config.segment_path())?;
 
         Ok(())
     }
@@ -171,34 +148,23 @@ impl SegmentManager {
     pub fn rewrite(&mut self, record: &DatabaseRecord) -> Result<()> {
         let directory = self.config.segment_path();
 
-        let next_id = self
-            .active_id
-            .checked_add(1)
-            .ok_or_else(|| Error::InvalidFormat("segment ID overflow".into()))?;
+        let name = random_segment_name();
 
-        let temp_path = directory.join(format!(".rewrite.{next_id:06}.tmp"));
-        let new_path = directory.join(format!("{next_id:06}.{SEGMENT_EXTENSION}"));
+        let temp_path = directory.join(format!(".rewrite.{name}.tmp"));
+        let new_path = directory.join(format!("{name}.{SEGMENT_EXTENSION}"));
 
         let bytes = rkyv::to_bytes::<rkyv::rancor::Error>(record)
             .map_err(|error| Error::Serialization(error.to_string()))?;
-
-        if temp_path.exists() {
-            std::fs::remove_file(&temp_path)?;
-        }
 
         {
             let temporary = DeirFile::create(&temp_path, DeirKind::Segment)?;
 
             let framed = Self::encode_record(&bytes)?;
-
             temporary.write(&framed)?;
         }
 
-        // The replacement snapshot is completely written before we touch
-        // any existing segment.
         std::fs::rename(&temp_path, &new_path)?;
 
-        // Remove obsolete segments.
         for entry in std::fs::read_dir(&directory)? {
             let entry = entry?;
             let path = entry.path();
@@ -213,7 +179,6 @@ impl SegmentManager {
         }
 
         self.active = Segment::open(&new_path)?;
-        self.active_id = next_id;
 
         Ok(())
     }
@@ -301,9 +266,13 @@ mod tests {
         let config = test_config(temp.path(), 1024, 4);
         let manager = SegmentManager::create(config)?;
 
+        let path = manager.path();
+
+        assert!(path.exists());
+        assert_eq!(path.parent(), Some(temp.path().join("segments").as_path()));
         assert_eq!(
-            manager.path(),
-            temp.path().join("segments").join("000001.deir")
+            path.extension().and_then(|x| x.to_str()),
+            Some(SEGMENT_EXTENSION)
         );
 
         Ok(())
@@ -316,18 +285,23 @@ mod tests {
         let config = test_config(temp.path(), 1024, 4);
         let mut manager = SegmentManager::create(config)?;
 
-        assert_eq!(manager.active_id(), 1);
-        assert!(manager.path().ends_with("000001.deir"));
+        let first = manager.path().to_owned();
 
         manager.rotate()?;
 
-        assert_eq!(manager.active_id(), 2);
-        assert!(manager.path().ends_with("000002.deir"));
+        let second = manager.path().to_owned();
+
+        assert_ne!(first, second);
+        assert!(first.exists());
+        assert!(second.exists());
 
         manager.rotate()?;
 
-        assert_eq!(manager.active_id(), 3);
-        assert!(manager.path().ends_with("000003.deir"));
+        let third = manager.path().to_owned();
+
+        assert_ne!(second, third);
+        assert_ne!(first, third);
+        assert!(third.exists());
 
         Ok(())
     }
@@ -354,7 +328,7 @@ mod tests {
 
         manager.rotate()?;
 
-        assert_eq!(manager.active_id(), 2);
+        let active = manager.path().to_owned();
 
         let result = manager.rotate();
 
@@ -363,7 +337,7 @@ mod tests {
             Err(Error::StorageLimit { max_segments: 2 })
         ));
 
-        assert_eq!(manager.active_id(), 2);
+        assert_eq!(manager.path(), active);
 
         Ok(())
     }
@@ -392,23 +366,27 @@ mod tests {
         let temp = tempfile::tempdir()?;
 
         let config = test_config(temp.path(), 1024 * 1024, 2);
-        let mut manager = SegmentManager::create(config.clone())?;
+        let mut manager = SegmentManager::create(config)?;
 
         manager.rotate()?;
 
-        assert_eq!(manager.active_id(), 2);
+        let before_rewrite = manager.path().to_owned();
 
         let database = Database::default();
         manager.rewrite(&database.to_record())?;
 
-        // Rewrite leaves only one physical segment.
-        assert_eq!(manager.active_id(), 3);
+        let after_rewrite = manager.path().to_owned();
 
-        // We should be able to create another segment even though the
-        // sequence number is already greater than max_segments.
+        // Rewrite leaves only one physical segment.
+        assert_ne!(before_rewrite, after_rewrite);
+
+        // We should be able to create another segment because only one
+        // physical segment remains.
         manager.rotate()?;
 
-        assert_eq!(manager.active_id(), 4);
+        let after_rotate = manager.path().to_owned();
+
+        assert_ne!(after_rewrite, after_rotate);
 
         Ok(())
     }
@@ -449,7 +427,6 @@ mod tests {
         let mut manager = SegmentManager::create(config)?;
 
         let database = Database::default();
-
         let record = database.to_record();
 
         manager.write_record(&record)?;
@@ -463,6 +440,34 @@ mod tests {
         let after = manager.path().metadata()?.len();
 
         assert!(after < before);
+
+        Ok(())
+    }
+
+    #[test]
+    fn manager_generates_random_segment_names() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+
+        let config = test_config(temp.path(), 1024, 4);
+        let mut manager = SegmentManager::create(config)?;
+
+        let first = manager.path().to_owned();
+
+        manager.rotate()?;
+
+        let second = manager.path().to_owned();
+
+        assert_ne!(first, second);
+
+        assert_eq!(
+            first.extension().and_then(|x| x.to_str()),
+            Some(SEGMENT_EXTENSION)
+        );
+
+        assert_eq!(
+            second.extension().and_then(|x| x.to_str()),
+            Some(SEGMENT_EXTENSION)
+        );
 
         Ok(())
     }
