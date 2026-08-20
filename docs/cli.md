@@ -120,10 +120,11 @@ nutrition/
 ├── nutrition.eir
 ├── eir.toml
 ├── segments/
-│   ├── 0000.deir
-│   └── 0001.deir
+│   ├── AFf5vef3os.deir
+│   └── wdefers213.deir
 └── wal/
 ```
+** Note that the string name for the dir files can vary and may not look like the example. ** 
 
 The layout is managed by `DatabasePaths` and `StorageConfig`.
 
